@@ -1,4 +1,5 @@
 import { requireUser } from "@/server/auth/session";
+import { getLlm } from "@/server/conversation/llm";
 import { getBusiness } from "@/server/dashboard/queries";
 import { prisma } from "@/server/db/prisma";
 import { Thread } from "../_components/thread";
@@ -75,7 +76,13 @@ export default async function SimulatorPage(props: PageProps<"/dashboard/simulat
             </p>
           )}
           <p className="text-xs text-zinc-500">
-            Try: “hi”, “what are your hours?”, “prices”, or tap a button in the last reply.
+            Brain: <code>{getLlm().name}</code>
+            {getLlm().name === "scripted" &&
+              " (rule engine, zero spend; set ANTHROPIC_API_KEY for Claude)"}
+          </p>
+          <p className="text-xs text-zinc-500">
+            Try: “hi”, “book a haircut on Tuesday”, “what are your hours?”, “cancel”, or tap a
+            button in the last reply.
           </p>
         </section>
       </div>

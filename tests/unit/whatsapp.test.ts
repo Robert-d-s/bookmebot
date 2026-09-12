@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { sendWhatsApp, toGraphPayload } from "@/server/channels/whatsapp/api";
 import { normaliseMessage, parseWhatsAppWebhook, toE164 } from "@/server/channels/whatsapp/parse";
 import { whatsappProvider } from "@/server/channels/whatsapp/provider";
-import { detectIntent } from "@/server/conversation/respond";
 import { hmacSha256Hex } from "@/server/webhooks/signature";
 
 /** A real-shaped Cloud API delivery: one text, one button reply, one status. */
@@ -182,36 +181,5 @@ describe("Graph API payloads", () => {
     await expect(
       sendWhatsApp("P", "+1", { kind: "text", text: "x" }, { fetch: fakeFetch, accessToken: "T" }),
     ).rejects.toMatchObject({ status: 401 });
-  });
-});
-
-describe("detectIntent (scripted responder)", () => {
-  const text = (t: string) => ({ kind: "text" as const, text: t, providerMessageId: "m" });
-  it.each([
-    ["hi there", "greeting"],
-    ["what are your hours?", "hours"],
-    ["how much is a haircut", "prices"],
-    ["I want to book", "book"],
-    ["asdf", "unknown"],
-  ])("%s -> %s", (t, intent) => {
-    expect(detectIntent(text(t))).toBe(intent);
-  });
-  it("reads button ids", () => {
-    expect(
-      detectIntent({
-        kind: "button_reply",
-        text: "x",
-        replyId: "menu:prices",
-        providerMessageId: "m",
-      }),
-    ).toBe("prices");
-    expect(
-      detectIntent({
-        kind: "list_reply",
-        text: "x",
-        replyId: "service:abc",
-        providerMessageId: "m",
-      }),
-    ).toBe("service");
   });
 });

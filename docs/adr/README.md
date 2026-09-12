@@ -20,3 +20,4 @@ Date: YYYY-MM-DD
 | [003](003-inbound-webhooks-persist-then-process.md) | Inbound webhooks are persisted first, processed second, claimed by status      |
 | [004](004-credentials-auth-jwt-sessions.md)         | Credentials login with JWT sessions, guarded in the proxy                      |
 | [005](005-channel-neutral-messaging.md)             | Channel-neutral messages, one log, simulator traffic through the webhook layer |
+| [006](006-llm-proposes-engine-decides.md)           | The model proposes, the engine decides; one loop for any brain                 |

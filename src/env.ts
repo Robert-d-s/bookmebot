@@ -29,6 +29,15 @@ export const env = createEnv({
     WHATSAPP_ACCESS_TOKEN: z.string().min(1).optional(),
     /** Graph API version for outbound calls. */
     WHATSAPP_GRAPH_VERSION: z.string().default("v22.0"),
+    /**
+     * Which brain answers customers. "scripted" is a deterministic rule engine
+     * (zero spend, used in CI); "anthropic" uses the Claude API and needs
+     * ANTHROPIC_API_KEY (read by the SDK itself). Default: anthropic when a
+     * key is present, otherwise scripted.
+     */
+    LLM_PROVIDER: z.enum(["scripted", "anthropic"]).optional(),
+    LLM_MODEL: z.string().default("claude-opus-5"),
+    ANTHROPIC_API_KEY: z.string().min(1).optional(),
   },
   client: {},
   runtimeEnv: {
@@ -42,6 +51,9 @@ export const env = createEnv({
     WHATSAPP_VERIFY_TOKEN: process.env.WHATSAPP_VERIFY_TOKEN,
     WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
     WHATSAPP_GRAPH_VERSION: process.env.WHATSAPP_GRAPH_VERSION,
+    LLM_PROVIDER: process.env.LLM_PROVIDER,
+    LLM_MODEL: process.env.LLM_MODEL,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === "1",

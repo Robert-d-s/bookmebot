@@ -58,7 +58,7 @@ const thread = (phone: string) =>
 describe("simulator channel", () => {
   const phone = "+40799000123";
 
-  it("first contact creates the customer, logs IN, answers with greeting + menu", async () => {
+  it("first contact creates the customer, logs IN, answers with a greeting carrying the menu", async () => {
     await drain(
       await signed(
         "simulator",
@@ -82,11 +82,10 @@ describe("simulator channel", () => {
     const msgs = await thread(phone);
     expect(msgs.map((m) => [m.direction, m.kind])).toEqual([
       ["IN", "text"],
-      ["OUT", "text"],
       ["OUT", "buttons"],
     ]);
     expect(msgs[1].text).toContain("Sim");
-    expect((msgs[2].payload as { buttons: unknown[] }).buttons).toHaveLength(3);
+    expect((msgs[1].payload as { buttons: unknown[] }).buttons).toHaveLength(3);
   });
 
   it("a button reply is understood and answered with real opening hours", async () => {
@@ -111,7 +110,7 @@ describe("simulator channel", () => {
       ),
     );
     const msgs = await thread(phone);
-    const hours = msgs.filter((m) => m.direction === "OUT").at(-2);
+    const hours = msgs.filter((m) => m.direction === "OUT").at(-1);
     expect(hours?.text).toContain("Mon: 09:00–18:00");
     expect(hours?.text).toContain("Sun: closed");
   });
@@ -225,7 +224,7 @@ describe("handleInboundMessage directly", () => {
     const first = await handleInboundMessage(args);
     const second = await handleInboundMessage(args);
     expect(first.duplicate).toBe(false);
-    expect(first.replies).toBe(2);
+    expect(first.replies).toBe(1);
     expect(second.duplicate).toBe(true);
   });
 });

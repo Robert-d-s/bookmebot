@@ -52,6 +52,7 @@ export async function handleInboundMessage(args: InboundArgs) {
   const replies = await respond({
     businessId: args.businessId,
     customer: { id: customer.id, name: customer.name },
+    channel: args.channel,
     message: args.message,
   });
 

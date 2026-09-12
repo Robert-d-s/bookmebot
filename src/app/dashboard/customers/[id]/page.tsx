@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
 import { getBusiness } from "@/server/dashboard/queries";
 import { prisma } from "@/server/db/prisma";
+import { setConversationModeAction } from "../../actions";
 import { Thread } from "../../_components/thread";
-import { Badge, card } from "../../_components/ui";
+import { Badge, buttonSecondary, card } from "../../_components/ui";
 import { fmtDateTime } from "../../_lib/format";
 
 export default async function CustomerPage(props: PageProps<"/dashboard/customers/[id]">) {
@@ -17,11 +18,13 @@ export default async function CustomerPage(props: PageProps<"/dashboard/customer
       include: {
         bookings: { orderBy: { startsAt: "desc" }, include: { service: true, staff: true } },
         messages: { orderBy: { createdAt: "asc" }, take: 500 },
+        conversation: { select: { mode: true, state: true } },
       },
     }),
   ]);
   if (!customer) notFound();
   const tz = business.timezone;
+  const mode = customer.conversation?.mode ?? "BOT";
 
   return (
     <>
@@ -51,7 +54,20 @@ export default async function CustomerPage(props: PageProps<"/dashboard/customer
           </ul>
         </section>
         <section className={card}>
-          <h2 className="mb-2 font-medium">Messages</h2>
+          <div className="mb-2 flex items-center gap-3">
+            <h2 className="font-medium">Messages</h2>
+            <Badge status={mode === "BOT" ? "PROCESSED" : "DEFERRED"} />
+            <span className="text-xs text-zinc-500">
+              {mode === "BOT" ? "bot answers" : "bot paused, a person replies"}
+            </span>
+            <form action={setConversationModeAction} className="ml-auto">
+              <input type="hidden" name="customerId" value={customer.id} />
+              <input type="hidden" name="mode" value={mode === "BOT" ? "HUMAN" : "BOT"} />
+              <button className={buttonSecondary}>
+                {mode === "BOT" ? "Pause bot" : "Resume bot"}
+              </button>
+            </form>
+          </div>
           <Thread messages={customer.messages} timezone={tz} />
         </section>
       </div>

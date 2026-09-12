@@ -257,6 +257,24 @@ export async function toggleResourceAction(formData: FormData) {
   revalidatePath("/dashboard/settings");
 }
 
+// --- conversations -------------------------------------------------------------
+
+export async function setConversationModeAction(formData: FormData) {
+  const user = await requireUser();
+  const customerId = uuid.parse(str(formData, "customerId"));
+  const mode = z.enum(["BOT", "HUMAN"]).parse(str(formData, "mode"));
+  const customer = await prisma.customer.findFirst({
+    where: { id: customerId, businessId: user.businessId },
+  });
+  if (!customer) fail("/dashboard/customers", "Not found");
+  await prisma.conversation.upsert({
+    where: { customerId },
+    create: { businessId: user.businessId, customerId, mode },
+    update: { mode },
+  });
+  revalidatePath(`/dashboard/customers/${customerId}`);
+}
+
 // --- events ------------------------------------------------------------------
 
 export async function replayEventAction(formData: FormData) {

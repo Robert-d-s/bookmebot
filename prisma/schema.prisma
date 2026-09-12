@@ -52,6 +52,7 @@ model Business {
   availabilityOverrides AvailabilityOverride[]
   users                 User[]
   messages              Message[]
+  conversations         Conversation[]
 
   @@map("businesses")
 }
@@ -229,8 +230,9 @@ model Customer {
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  bookings Booking[]
-  messages Message[]
+  bookings     Booking[]
+  messages     Message[]
+  conversation Conversation?
 
   @@unique([businessId, phone])
   @@map("customers")
@@ -417,4 +419,36 @@ model Message {
   @@index([customerId, createdAt])
   @@index([businessId, createdAt])
   @@map("messages")
+}
+
+// ---------------------------------------------------------------------------
+// Conversations (phase 5). One per customer per business: the LLM transcript
+// (neutral format, provider-independent) and the small state the guardrails
+// need (pending proposal, turn counter, bot/human mode).
+// ---------------------------------------------------------------------------
+
+enum ConversationMode {
+  BOT
+  HUMAN
+
+  @@map("conversation_mode")
+}
+
+model Conversation {
+  id         String           @id @default(uuid()) @db.Uuid
+  businessId String           @map("business_id") @db.Uuid
+  customerId String           @unique @map("customer_id") @db.Uuid
+  mode       ConversationMode @default(BOT)
+  /// Turn[] in src/server/conversation/llm/types.ts, trimmed to the last N turns.
+  transcript Json             @default("[]")
+  /// { turn: number, proposal?: {...} } - see conversation/state.ts
+  state      Json             @default("{}")
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, updatedAt])
+  @@map("conversations")
 }
