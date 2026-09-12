@@ -1,3 +1,4 @@
+import { whatsappHandler, whatsappProvider } from "@/server/channels/whatsapp/provider";
 import { registerProvider } from "../registry";
 import { simulatorHandler, simulatorProvider } from "./simulator";
 
@@ -7,3 +8,4 @@ import { simulatorHandler, simulatorProvider } from "./simulator";
  * be added here.
  */
 registerProvider(simulatorProvider, simulatorHandler);
+registerProvider(whatsappProvider, whatsappHandler);

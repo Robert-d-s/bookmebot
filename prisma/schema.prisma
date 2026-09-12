@@ -38,6 +38,8 @@ model Business {
   minLeadMin         Int      @default(60) @map("min_lead_min")
   /// Furthest into the future a customer may book (days).
   maxAdvanceDays     Int      @default(60) @map("max_advance_days")
+  /// Meta phone_number_id that routes inbound WhatsApp traffic to this business.
+  whatsappPhoneNumberId String? @unique @map("whatsapp_phone_number_id")
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -49,6 +51,7 @@ model Business {
   availabilityRules     AvailabilityRule[]
   availabilityOverrides AvailabilityOverride[]
   users                 User[]
+  messages              Message[]
 
   @@map("businesses")
 }
@@ -227,6 +230,7 @@ model Customer {
 
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   bookings Booking[]
+  messages Message[]
 
   @@unique([businessId, phone])
   @@map("customers")
@@ -369,4 +373,48 @@ model InboundEvent {
   @@index([status, nextAttemptAt])
   @@index([provider, correlationKey])
   @@map("inbound_events")
+}
+
+// ---------------------------------------------------------------------------
+// Messaging channels (phase 4). WhatsApp and the built-in simulator share one
+// message log so the dashboard and the conversation layer do not care which.
+// ---------------------------------------------------------------------------
+
+enum Channel {
+  WHATSAPP
+  SIMULATOR
+
+  @@map("channel")
+}
+
+enum MessageDirection {
+  IN
+  OUT
+
+  @@map("message_direction")
+}
+
+model Message {
+  id                String           @id @default(uuid()) @db.Uuid
+  businessId        String           @map("business_id") @db.Uuid
+  customerId        String           @map("customer_id") @db.Uuid
+  channel           Channel
+  direction         MessageDirection
+  /// text | buttons | list | button_reply | list_reply | unsupported
+  kind              String
+  /// Human-readable body (or the chosen option's title for replies).
+  text              String?
+  /// Channel-specific detail: button ids, list rows, raw message for unsupported kinds.
+  payload           Json?
+  /// Provider's message id (WhatsApp wamid); unique per channel when present.
+  providerMessageId String?          @map("provider_message_id")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([channel, providerMessageId])
+  @@index([customerId, createdAt])
+  @@index([businessId, createdAt])
+  @@map("messages")
 }

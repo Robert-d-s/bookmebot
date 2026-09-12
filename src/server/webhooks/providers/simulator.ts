@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { env } from "@/env";
+import { handleInboundMessage } from "@/server/channels/inbound";
 import { businessIdBySlug, findOrCreateCustomer } from "@/server/customers";
 import { prisma } from "@/server/db/prisma";
 import { NotFoundError, SchedulingError, cancelBooking, reserveSlot } from "@/server/scheduling";
@@ -17,6 +18,8 @@ import type { EventHandler, WebhookProvider } from "../types";
  * Events:
  *   booking.requested  { clientRef, business, service, staff?, startsAt, customer: { phone, name? } }
  *   booking.cancelled  { clientRef }
+ *   message.received   { business, from, name?, text } | { business, from, name?, reply: { id, title } }
+ *                      a customer chat message, exactly as WhatsApp would deliver one
  * `clientRef` is the correlation key, which is what lets a cancel that arrives
  * before its create wait for it instead of failing.
  */
@@ -44,6 +47,14 @@ const requested = z.object({
 
 const cancelled = z.object({ clientRef: z.string().min(1) });
 
+const received = z.object({
+  business: z.string().min(1),
+  from: z.string().regex(/^\+[1-9]\d{6,14}$/),
+  name: z.string().optional(),
+  text: z.string().optional(),
+  reply: z.object({ id: z.string(), title: z.string() }).optional(),
+});
+
 export const simulatorProvider: WebhookProvider = {
   name: "simulator",
   verify: (rawBody, headers) =>
@@ -52,7 +63,12 @@ export const simulatorProvider: WebhookProvider = {
     envelope.parse(JSON.parse(rawBody)).events.map((e) => ({
       providerEventId: e.id,
       eventType: e.type,
-      correlationKey: typeof e.data.clientRef === "string" ? e.data.clientRef : undefined,
+      correlationKey:
+        typeof e.data.clientRef === "string"
+          ? e.data.clientRef
+          : typeof e.data.from === "string"
+            ? e.data.from
+            : undefined,
       payload: e.data,
     })),
 };
@@ -114,6 +130,27 @@ export const simulatorHandler: EventHandler = async (event) => {
         }
         throw err;
       }
+    }
+
+    case "message.received": {
+      const p = received.safeParse(event.payload);
+      if (!p.success) return { kind: "reject", reason: `invalid payload: ${p.error.message}` };
+      const businessId = await businessIdBySlug(p.data.business);
+      const result = await handleInboundMessage({
+        businessId,
+        channel: "SIMULATOR",
+        phone: p.data.from,
+        name: p.data.name,
+        message: p.data.reply
+          ? {
+              kind: "button_reply",
+              text: p.data.reply.title,
+              replyId: p.data.reply.id,
+              providerMessageId: event.providerEventId,
+            }
+          : { kind: "text", text: p.data.text ?? "", providerMessageId: event.providerEventId },
+      });
+      return { kind: "processed", result };
     }
 
     default:

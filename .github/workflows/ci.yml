@@ -34,6 +34,8 @@ jobs:
       CRON_SECRET: ci-cron-secret-not-real-0000
       WEBHOOK_SIMULATOR_SECRET: ci-simulator-secret-not-real
       AUTH_SECRET: ci-auth-secret-not-real-at-least-32-chars
+      WHATSAPP_APP_SECRET: ci-whatsapp-app-secret-not-real
+      WHATSAPP_VERIFY_TOKEN: ci-verify-token
 
     steps:
       - uses: actions/checkout@v7

@@ -7,6 +7,7 @@ const NAV = [
   ["/dashboard", "Schedule"],
   ["/dashboard/bookings/new", "New booking"],
   ["/dashboard/customers", "Customers"],
+  ["/dashboard/simulator", "Simulator"],
   ["/dashboard/settings", "Settings"],
   ["/dashboard/events", "Events"],
 ] as const;

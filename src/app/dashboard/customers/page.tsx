@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/server/auth/session";
 import { getBusiness, getCustomers } from "@/server/dashboard/queries";
 import { Badge, card } from "../_components/ui";
@@ -25,7 +26,11 @@ export default async function CustomersPage() {
           <tbody>
             {customers.map((c) => (
               <tr key={c.id} className="border-t">
-                <td className="py-1 pr-4">{c.name ?? "—"}</td>
+                <td className="py-1 pr-4">
+                  <Link href={`/dashboard/customers/${c.id}`} className="hover:underline">
+                    {c.name ?? "—"}
+                  </Link>
+                </td>
                 <td className="py-1 pr-4 font-mono">{c.phone}</td>
                 <td className="py-1 pr-4">{c._count.bookings}</td>
                 <td className="py-1 pr-4">

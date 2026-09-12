@@ -30,6 +30,7 @@ async function main() {
       slotGranularityMin: 15,
       minLeadMin: 60,
       maxAdvanceDays: 60,
+      whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || null,
     },
   });
 

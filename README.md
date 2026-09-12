@@ -20,8 +20,8 @@ multi-resource scheduling engine and a webhook reliability layer.
 | 1     | Scheduling engine: slots, reserve/cancel/reschedule, multi-resource, concurrency tests | done  |
 | 2     | Webhook reliability layer: dedupe, retries, dead letters                               | done  |
 | 3     | Auth + owner dashboard (deploy guide ready, see docs/deploy.md)                        | done  |
-| 4     | WhatsApp channel + simulator channel                                                   | next  |
-| 5     | AI conversation layer (zero-spend providers)                                           |       |
+| 4     | WhatsApp channel + simulator channel                                                   | done  |
+| 5     | AI conversation layer (zero-spend providers)                                           | next  |
 | 6     | Payments: deposits and refunds via Stripe test mode                                    |       |
 | 7     | Google Calendar two-way sync                                                           |       |
 | 8     | Ops: RLS, Sentry, PostHog                                                              |       |
@@ -38,7 +38,12 @@ pnpm db:seed                    # one demo barbershop
 pnpm dev                        # http://localhost:3000
                                 # dashboard: /login, owner@frizeria.demo / demo-password
 pnpm check                      # typecheck + lint + tests (what CI runs)
+pnpm tick --watch               # local scheduler: retries + hold release every 30 s
 ```
+
+Everything can be exercised locally with no external accounts: the dashboard's
+**Simulator** page is a fake customer phone whose messages take the exact WhatsApp path
+(signed webhook, event log, responder, message log). See learning note 04.
 
 ## Layout
 
@@ -59,10 +64,12 @@ docs/adr/           architecture decision records
 - [ADR-002](docs/adr/002-advisory-lock-serialises-writes.md): one advisory lock per business serialises writes
 - [ADR-003](docs/adr/003-inbound-webhooks-persist-then-process.md): webhooks are persisted first, processed second
 - [ADR-004](docs/adr/004-credentials-auth-jwt-sessions.md): credentials login with JWT sessions
+- [ADR-005](docs/adr/005-channel-neutral-messaging.md): channel-neutral messages, simulator through the webhook layer
 - [Learning note 00](docs/learning/00-foundation.md): foundation
 - [Learning note 01](docs/learning/01-scheduling-engine.md): scheduling engine
 - [Learning note 02](docs/learning/02-webhook-reliability.md): webhook reliability layer
 - [Learning note 03](docs/learning/03-dashboard-and-auth.md): auth and the owner dashboard
+- [Learning note 04](docs/learning/04-channels.md): WhatsApp channel and the simulator, incl. how to test everything locally
 - [Deploy guide](docs/deploy.md): Vercel Hobby + Supabase free tier
 
 ## API (public booking routes have no auth yet; cron and admin routes take `Authorization: Bearer $CRON_SECRET`)

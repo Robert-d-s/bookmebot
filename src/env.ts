@@ -21,6 +21,14 @@ export const env = createEnv({
     WEBHOOK_SIMULATOR_SECRET: z.string().min(16),
     /** Auth.js JWT/cookie signing key. `openssl rand -base64 32`. */
     AUTH_SECRET: z.string().min(32),
+    /** Meta app secret; signs inbound WhatsApp webhooks. Unset = provider refuses everything. */
+    WHATSAPP_APP_SECRET: z.string().min(1).optional(),
+    /** Token you type into the Meta webhook config; echoed back on the GET challenge. */
+    WHATSAPP_VERIFY_TOKEN: z.string().min(1).optional(),
+    /** Bearer token for the Graph API (temporary test token is fine for the demo). */
+    WHATSAPP_ACCESS_TOKEN: z.string().min(1).optional(),
+    /** Graph API version for outbound calls. */
+    WHATSAPP_GRAPH_VERSION: z.string().default("v22.0"),
   },
   client: {},
   runtimeEnv: {
@@ -30,6 +38,10 @@ export const env = createEnv({
     CRON_SECRET: process.env.CRON_SECRET,
     WEBHOOK_SIMULATOR_SECRET: process.env.WEBHOOK_SIMULATOR_SECRET,
     AUTH_SECRET: process.env.AUTH_SECRET,
+    WHATSAPP_APP_SECRET: process.env.WHATSAPP_APP_SECRET,
+    WHATSAPP_VERIFY_TOKEN: process.env.WHATSAPP_VERIFY_TOKEN,
+    WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
+    WHATSAPP_GRAPH_VERSION: process.env.WHATSAPP_GRAPH_VERSION,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === "1",
