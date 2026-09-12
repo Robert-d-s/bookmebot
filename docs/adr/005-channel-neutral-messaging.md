@@ -38,7 +38,8 @@ layer (phase 5) and the dashboard's message log must still be buildable and test
   provider is registered even when unconfigured: it then refuses all traffic with 401.
 - Delivery statuses (sent/delivered/read) are ingested as events and skipped. They are in
   the events table if ever needed for read receipts; nothing acts on them.
-- The scripted responder in `conversation/respond.ts` is a placeholder with the final
-  signature. Phase 5 replaces its body, not its callers.
+- `conversation/respond.ts` is the single entry point into the conversation layer
+  (ADR-006). It began as a scripted stub with this exact signature; the agent loop took
+  over without touching the channels.
 - Media messages arrive as `unsupported` with the raw payload kept. Handling them is out
   of scope for the demo.

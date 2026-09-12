@@ -15,10 +15,12 @@ surface wants buttons and lists, not prose.
 **A provider-neutral loop** (`conversation/agent.ts`) with a tiny `LlmClient`
 interface: `complete(system, context, tools, turns) -> text | tool calls`. The
 transcript is stored in that neutral shape, so history survives a provider switch.
-Two clients:
+Three clients:
 
 - `AnthropicLlm`: Claude via the official SDK, manual tool loop, stable system prompt
   cached, `effort: low` because this is chat.
+- `OpenAiCompatibleLlm`: any chat-completions endpoint with function calling (Groq,
+  Google AI Studio, OpenRouter, Ollama), for LLM calls at zero cost.
 - `ScriptedLlm`: a rule engine wearing the same interface. It emits the same tool calls
   a model would (list services, get availability, propose, confirm, cancel). It is the
   default without an API key, and what CI runs. It is not a mock: it drives the real

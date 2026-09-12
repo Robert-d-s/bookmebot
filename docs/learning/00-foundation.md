@@ -53,7 +53,7 @@ instead. Details in `.env.example`.
   the trigger works on reschedule and cancel.
 - **`PENDING` counts as occupied.** That is what makes deposits-before-confirm (phase 6)
   safe: the slot is held while the customer pays; a sweeper releases expired holds.
-- **`version` on bookings** is an optimistic-concurrency token for dashboard edits (phase 3).
+- **`version` on bookings** is an optimistic-concurrency token used by the dashboard's edit forms and, later, by the calendar sync to detect changes.
 
 ## Dev loop
 

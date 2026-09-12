@@ -55,5 +55,5 @@ external account.
   misconfigured secret visible in the admin list instead of silently dropped.
 - Backoff is 1, 2, 4, 8, 16 minutes with jitter. With a five-minute cron the practical
   retry cadence is coarser than that; fine for a demo, and the constants are in one place.
-- The admin and cron routes are guarded by a shared bearer secret until phase 3 adds
-  real sessions.
+- The admin and cron API routes are guarded by a shared bearer secret; the dashboard's
+  own events page uses the owner session instead (ADR-004).

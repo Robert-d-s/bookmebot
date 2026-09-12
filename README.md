@@ -9,7 +9,8 @@ multi-resource scheduling engine and a webhook reliability layer.
 
 - Next.js 16 (App Router, route handlers, server actions), TypeScript, React 19, Tailwind v4
 - PostgreSQL 16 with Prisma 7 (local Docker for dev and tests, Supabase free tier hosted)
-- Auth.js v5, Resend, Meta WhatsApp Cloud API, Google Calendar API, Stripe (test mode)
+- Auth.js v5 (credentials), Meta WhatsApp Cloud API, Google Calendar API, Stripe (test mode)
+- Chat brain: Claude via the official SDK, any OpenAI-compatible endpoint (free tiers), or a scripted rule engine
 - Vercel (Hobby) for hosting, GitHub Actions for CI and scheduled jobs
 
 ## Status
@@ -71,8 +72,10 @@ Claude takes over through the same tools, or any free OpenAI-compatible endpoint
 ## Layout
 
 ```
-src/app/            Next.js routes: /login, /dashboard/* (server components + actions), /api/*
-src/server/         domain layer: scheduling, webhooks, customers, http helpers, ...
+src/app/            /login, /dashboard/*, /book/[slug] (public booking), /pay/[session], /api/*
+src/server/         scheduling (engine), bookings (orchestration), payments, calendar,
+                    webhooks (reliability layer), channels (WhatsApp, simulator),
+                    conversation (agent, tools, LLM clients), auth, customers, http, analytics
 src/generated/      Prisma client (generated, not committed)
 prisma/             schema, migrations (some hand-written SQL), seed
 tests/              unit (pure + property), integration (real Postgres), concurrency
@@ -103,11 +106,11 @@ docs/adr/           architecture decision records
 - [Learning note 09](docs/learning/09-extensions.md): refund cutoff, public booking page, per-staff calendars
 - [Deploy guide](docs/deploy.md): Vercel Hobby + Supabase free tier
 
-## API (public booking routes have no auth yet; cron and admin routes take `Authorization: Bearer $CRON_SECRET`)
+## API (booking routes are customer-facing and unauthenticated by design; cron and admin routes take `Authorization: Bearer $CRON_SECRET`; the dashboard uses sessions)
 
 | Method | Path                | Purpose                                                                             |
 | ------ | ------------------- | ----------------------------------------------------------------------------------- |
 | GET    | `/api/availability` | bookable slots for a service, `business`, `service`, optional `staff`, `from`, `to` |
-| POST   | `/api/bookings`     | reserve a slot; customer identified by E.164 phone                                  |
+| POST   | `/api/bookings`     | book; customer by E.164 phone; returns a `payment` link when a deposit is due       |
 | PATCH  | `/api/bookings/:id` | reschedule, optionally to another staff or `"any"`                                  |
-| DELETE | `/api/bookings/:id` | cancel                                                                              |
+| DELETE | `/api/bookings/:id` | cancel; applies the refund cutoff (customer-initiated)                              |

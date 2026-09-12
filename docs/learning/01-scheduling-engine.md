@@ -86,8 +86,8 @@ curl -X POST localhost:3000/api/bookings -H 'content-type: application/json' -d 
 ```
 
 Then `DELETE /api/bookings/<id>?business=frizeria-demo` and
-`PATCH /api/bookings/<id>` with `{ "business", "startsAt", "staff"? }`. No auth yet; that
-is phase 3.
+`PATCH /api/bookings/<id>` with `{ "business", "startsAt", "staff"? }`. These routes are customer-facing and unauthenticated by design; the dashboard uses
+sessions (learning note 03).
 
 ## Self-test
 
