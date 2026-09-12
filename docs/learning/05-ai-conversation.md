@@ -64,9 +64,20 @@ cannot do is understand "the day after tomorrow-ish around lunch". That is what 
 Claude path is for, and it is a config switch:
 
 ```bash
+# Claude (cents per conversation)
 ANTHROPIC_API_KEY=sk-ant-...   # LLM_PROVIDER defaults to anthropic when set
 LLM_MODEL=claude-haiku-4-5     # optional; default claude-opus-5
+
+# Free LLM calls: any OpenAI-compatible endpoint with tool calling
+LLM_PROVIDER=openai-compatible
+LLM_BASE_URL=https://api.groq.com/openai/v1     # Groq free tier; see .env.example for Gemini, OpenRouter, Ollama
+LLM_API_KEY=gsk_...
+LLM_MODEL=llama-3.3-70b-versatile
 ```
+
+Free-tier models are weaker at multi-step tool use than Claude; if one keeps calling
+`confirm_booking` too early, the guard refuses and the model has to ask. That is the
+point of putting the guarantee in the tool.
 
 ## Try it
 
@@ -79,5 +90,5 @@ customer page to pause the bot (what `handoff` does) and resume it.
 1. What stops the model from calling `confirm_booking` twice for the same proposal?
 2. The customer taps a slot, waits 40 minutes, then taps Yes. What happens and why?
 3. Why does `get_availability` return a sample of 8 starts instead of all 35?
-4. Where would a Groq or Ollama client go, and what would it have to implement?
+4. The OpenAI-compatible client sends `system + context` as one system message. What cache-related property does the Anthropic client keep that this one loses?
 5. Why is the transcript stored in the neutral `Turn` format rather than the SDK's `MessageParam`?

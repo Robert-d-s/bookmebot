@@ -35,9 +35,12 @@ export const env = createEnv({
      * ANTHROPIC_API_KEY (read by the SDK itself). Default: anthropic when a
      * key is present, otherwise scripted.
      */
-    LLM_PROVIDER: z.enum(["scripted", "anthropic"]).optional(),
+    LLM_PROVIDER: z.enum(["scripted", "anthropic", "openai-compatible"]).optional(),
     LLM_MODEL: z.string().default("claude-opus-5"),
     ANTHROPIC_API_KEY: z.string().min(1).optional(),
+    /** For openai-compatible: e.g. https://api.groq.com/openai/v1 (Groq free tier). */
+    LLM_BASE_URL: z.string().url().optional(),
+    LLM_API_KEY: z.string().min(1).optional(),
   },
   client: {},
   runtimeEnv: {
@@ -54,6 +57,8 @@ export const env = createEnv({
     LLM_PROVIDER: process.env.LLM_PROVIDER,
     LLM_MODEL: process.env.LLM_MODEL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    LLM_BASE_URL: process.env.LLM_BASE_URL,
+    LLM_API_KEY: process.env.LLM_API_KEY,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === "1",

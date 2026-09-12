@@ -1,5 +1,6 @@
 import { env } from "@/env";
 import { AnthropicLlm } from "./anthropic";
+import { OpenAiCompatibleLlm } from "./openai-compatible";
 import { ScriptedLlm } from "./scripted";
 import type { LlmClient } from "./types";
 
@@ -8,8 +9,17 @@ let override: LlmClient | undefined;
 /** Which brain answers: env-driven, overridable by tests. */
 export function getLlm(): LlmClient {
   if (override) return override;
-  const provider = env.LLM_PROVIDER ?? (env.ANTHROPIC_API_KEY ? "anthropic" : "scripted");
-  return provider === "anthropic" ? new AnthropicLlm() : new ScriptedLlm();
+  const provider =
+    env.LLM_PROVIDER ??
+    (env.ANTHROPIC_API_KEY ? "anthropic" : env.LLM_BASE_URL ? "openai-compatible" : "scripted");
+  switch (provider) {
+    case "anthropic":
+      return new AnthropicLlm();
+    case "openai-compatible":
+      return new OpenAiCompatibleLlm();
+    default:
+      return new ScriptedLlm();
+  }
 }
 
 export function setLlm(client: LlmClient | undefined) {

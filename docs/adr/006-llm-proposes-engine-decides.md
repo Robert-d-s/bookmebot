@@ -44,9 +44,10 @@ from tool results, so the model never has to format them.
 
 ## Consequences
 
-- Swapping the brain is an env var. Adding a third provider (Groq, Gemini, Ollama) is
-  one class against `LlmClient`; none is included so the Anthropic path stays the
-  reference and the scripted path stays the free one.
+- Swapping the brain is an env var. A third client, `OpenAiCompatibleLlm`, speaks the
+  chat-completions wire format and covers the free tiers (Groq, Google AI Studio,
+  OpenRouter `:free` models) and a local Ollama, so real LLM calls are possible at zero
+  cost. Quality varies by model; the Anthropic path is the reference.
 - The scripted brain is narrow by design (book, cancel, hours, prices, greeting). Its job
   is to prove the loop and the guardrails, not to understand language.
 - The system prompt lists services and staff with ids, so the model can call tools

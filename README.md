@@ -45,7 +45,8 @@ Everything can be exercised locally with no external accounts: the dashboard's
 **Simulator** page is a fake customer phone whose messages take the exact WhatsApp path
 (signed webhook, event log, agent, message log). Without `ANTHROPIC_API_KEY` a scripted
 rule engine plays the model, so booking by chat works with zero spend; with a key,
-Claude takes over through the same tools. See learning notes 04 and 05.
+Claude takes over through the same tools, or any free OpenAI-compatible endpoint
+(Groq, Gemini, OpenRouter, Ollama) via `LLM_BASE_URL`. See learning notes 04 and 05.
 
 ## Layout
 
