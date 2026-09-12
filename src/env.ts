@@ -46,6 +46,9 @@ export const env = createEnv({
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
     /** Public base URL used in Checkout success/cancel links. */
     APP_URL: z.string().url().default("http://localhost:3000"),
+    /** Google OAuth web client for Calendar. Unset = demo (fake) calendar only. */
+    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   },
   client: {},
   runtimeEnv: {
@@ -67,6 +70,8 @@ export const env = createEnv({
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     APP_URL: process.env.APP_URL,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === "1",

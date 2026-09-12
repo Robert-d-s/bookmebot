@@ -23,8 +23,8 @@ multi-resource scheduling engine and a webhook reliability layer.
 | 4     | WhatsApp channel + simulator channel                                                   | done  |
 | 5     | AI conversation layer: tool loop, Claude or a zero-spend rule engine                   | done  |
 | 6     | Payments: deposits as holds, refunds on cancel, Stripe test mode + local fake gateway  | done  |
-| 7     | Google Calendar two-way sync                                                           | next  |
-| 8     | Ops: RLS, Sentry, PostHog                                                              |       |
+| 7     | Google Calendar two-way sync: push by booking version, pull blocks, demo calendar      | done  |
+| 8     | Ops: RLS, Sentry, PostHog                                                              | next  |
 
 ## Getting started
 
@@ -70,6 +70,7 @@ docs/adr/           architecture decision records
 - [ADR-005](docs/adr/005-channel-neutral-messaging.md): channel-neutral messages, simulator through the webhook layer
 - [ADR-006](docs/adr/006-llm-proposes-engine-decides.md): the model proposes, the engine decides
 - [ADR-007](docs/adr/007-deposits-as-holds.md): deposits are holds, Stripe events drive state
+- [ADR-008](docs/adr/008-calendar-sync-by-version.md): calendar push by booking version, pulled blocks
 - [Learning note 00](docs/learning/00-foundation.md): foundation
 - [Learning note 01](docs/learning/01-scheduling-engine.md): scheduling engine
 - [Learning note 02](docs/learning/02-webhook-reliability.md): webhook reliability layer
@@ -77,6 +78,7 @@ docs/adr/           architecture decision records
 - [Learning note 04](docs/learning/04-channels.md): WhatsApp channel and the simulator, incl. how to test everything locally
 - [Learning note 05](docs/learning/05-ai-conversation.md): the AI conversation layer
 - [Learning note 06](docs/learning/06-payments.md): deposits and refunds
+- [Learning note 07](docs/learning/07-calendar-sync.md): Google Calendar two-way sync
 - [Deploy guide](docs/deploy.md): Vercel Hobby + Supabase free tier
 
 ## API (public booking routes have no auth yet; cron and admin routes take `Authorization: Bearer $CRON_SECRET`)

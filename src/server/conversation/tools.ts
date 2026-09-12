@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { BookingSource, Channel } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { cancelBookingAndRefund, createBooking } from "@/server/bookings";
+import { pushSoon } from "@/server/calendar/sync";
 import { SchedulingError, getAvailability, rescheduleBooking } from "@/server/scheduling";
 import { type LocalDate, toLocalDate } from "@/server/scheduling/time";
 import type { ToolDef } from "./llm/types";
@@ -333,6 +334,7 @@ export async function executeTool(
           now: ctx.now,
         }),
       );
+      pushSoon(b.id);
       return { booking_id: b.id, status: b.status, when: fmt(b.startsAt, ctx.timezone) };
     }
     case "handoff": {

@@ -70,6 +70,8 @@ interface Context {
   }[];
   /** Active resources of the required type (empty when none is required). */
   resources: { id: string }[];
+  /** Owner-blocked time from the external calendar: busy for everyone. */
+  blocks: Interval[];
 }
 
 async function loadContext(
@@ -115,7 +117,7 @@ async function loadContext(
     .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
   const staffIds = staff.map((s) => s.id);
 
-  const [rules, overrides, bookings, resources] = await Promise.all([
+  const [rules, overrides, bookings, resources, blocks] = await Promise.all([
     db.availabilityRule.findMany({
       where: { businessId: business.id, OR: [{ staffId: null }, { staffId: { in: staffIds } }] },
       select: { staffId: true, weekday: true, startMin: true, endMin: true },
@@ -155,12 +157,21 @@ async function loadContext(
           orderBy: { name: "asc" },
         })
       : Promise.resolve([]),
+    db.calendarBlock.findMany({
+      where: {
+        businessId: business.id,
+        startsAt: { lt: args.range.end },
+        endsAt: { gt: args.range.start },
+      },
+      select: { startsAt: true, endsAt: true },
+    }),
   ]);
 
   return {
     business,
     service,
     staff,
+    blocks: blocks.map((b) => ({ start: b.startsAt, end: b.endsAt })),
     availability: {
       timezone: business.timezone,
       rules,
@@ -185,7 +196,7 @@ function buildQuery(ctx: Context, dates: LocalDate[], now: Date): SlotQuery {
   const staff: StaffCandidate[] = ctx.staff.map((s) => ({
     staffId: s.id,
     windows: dates.flatMap((d) => workingWindows(ctx.availability, s.id, d)),
-    busy: ctx.bookings.filter((b) => b.staffId === s.id).map(bookingFootprint),
+    busy: [...ctx.bookings.filter((b) => b.staffId === s.id).map(bookingFootprint), ...ctx.blocks],
   }));
   const resources = ctx.resources.map((r) => ({
     resourceId: r.id,

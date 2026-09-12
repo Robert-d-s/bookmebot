@@ -54,6 +54,8 @@ model Business {
   messages              Message[]
   conversations         Conversation[]
   payments              Payment[]
+  calendarConnection    CalendarConnection?
+  calendarBlocks        CalendarBlock[]
 
   @@map("businesses")
 }
@@ -284,8 +286,9 @@ model Booking {
   customer  Customer          @relation(fields: [customerId], references: [id])
   service   Service           @relation(fields: [serviceId], references: [id])
   staff     Staff             @relation(fields: [staffId], references: [id])
-  resources BookingResource[]
-  payment   Payment?
+  resources     BookingResource[]
+  payment       Payment?
+  calendarEvent CalendarEvent?
 
   @@index([businessId, startsAt])
   @@index([staffId, startsAt])
@@ -499,4 +502,78 @@ model Payment {
 
   @@index([businessId, status])
   @@map("payments")
+}
+
+// ---------------------------------------------------------------------------
+// Calendar sync (phase 7). One external calendar per business. Bookings are
+// pushed as events; foreign events are pulled as blocks the engine treats as
+// busy time.
+// ---------------------------------------------------------------------------
+
+model CalendarConnection {
+  id           String    @id @default(uuid()) @db.Uuid
+  businessId   String    @unique @map("business_id") @db.Uuid
+  /// "google" or "fake" (local demo)
+  provider     String
+  calendarId   String    @default("primary") @map("calendar_id")
+  accessToken  String?   @map("access_token")
+  refreshToken String?   @map("refresh_token")
+  expiresAt    DateTime? @map("expires_at") @db.Timestamptz
+  /// Google incremental-sync token for the pull side.
+  syncToken    String?   @map("sync_token")
+  lastPulledAt DateTime? @map("last_pulled_at") @db.Timestamptz
+  lastError    String?   @map("last_error")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  events   CalendarEvent[]
+  blocks   CalendarBlock[]
+
+  @@map("calendar_connections")
+}
+
+enum CalendarSyncStatus {
+  SYNCED
+  FAILED
+  DELETED
+
+  @@map("calendar_sync_status")
+}
+
+/// The external event that mirrors one booking, and which booking version it reflects.
+model CalendarEvent {
+  id              String             @id @default(uuid()) @db.Uuid
+  bookingId       String             @unique @map("booking_id") @db.Uuid
+  connectionId    String             @map("connection_id") @db.Uuid
+  externalEventId String             @map("external_event_id")
+  syncedVersion   Int                @map("synced_version")
+  status          CalendarSyncStatus @default(SYNCED)
+  lastError       String?            @map("last_error")
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+
+  booking    Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  connection CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_events")
+}
+
+/// Time the owner blocked in the external calendar. Busy for every staff member.
+model CalendarBlock {
+  id              String   @id @default(uuid()) @db.Uuid
+  businessId      String   @map("business_id") @db.Uuid
+  connectionId    String   @map("connection_id") @db.Uuid
+  externalEventId String   @map("external_event_id")
+  startsAt        DateTime @map("starts_at") @db.Timestamptz
+  endsAt          DateTime @map("ends_at") @db.Timestamptz
+  summary         String?
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  connection CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, externalEventId])
+  @@index([businessId, startsAt])
+  @@map("calendar_blocks")
 }

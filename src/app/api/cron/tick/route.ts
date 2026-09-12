@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireInternalSecret } from "@/server/http/internal-auth";
+import { syncCalendars } from "@/server/calendar/sync";
 import { sweepPayments } from "@/server/payments";
 import { releaseExpiredHolds } from "@/server/scheduling";
 import { processDue } from "@/server/webhooks";
@@ -17,11 +18,13 @@ export async function GET(req: NextRequest) {
 
   const [webhooks, releasedHolds] = await Promise.all([processDue(), releaseExpiredHolds()]);
   const payments = await sweepPayments();
+  const calendars = await syncCalendars();
   return NextResponse.json({
     ok: true,
     at: new Date().toISOString(),
     webhooks,
     releasedHolds,
     payments,
+    calendars,
   });
 }

@@ -1,4 +1,5 @@
 import { env } from "@/env";
+import { pushSoon } from "@/server/calendar/sync";
 import { prisma } from "@/server/db/prisma";
 import { getGateway } from "./gateway";
 
@@ -100,6 +101,7 @@ export async function markPaid(args: {
   if (booking.count === 0 && fresh.status === "CANCELLED") {
     await refundDeposit(payment.bookingId, now);
   }
+  if (booking.count > 0) pushSoon(payment.bookingId);
   return { payment: updatedPayment, booking: fresh, already: false };
 }
 

@@ -1,3 +1,4 @@
+import { pushSoon } from "@/server/calendar/sync";
 import { prisma } from "@/server/db/prisma";
 import {
   type BookingRecord,
@@ -33,7 +34,11 @@ export async function createBooking(
   });
   const deposit =
     (service?.depositCents ?? 0) > 0 && input.collectDeposit !== false && paymentsEnabled();
-  if (!deposit) return { booking: await reserveSlot({ ...input, status: "CONFIRMED" }) };
+  if (!deposit) {
+    const booking = await reserveSlot({ ...input, status: "CONFIRMED" });
+    pushSoon(booking.id);
+    return { booking };
+  }
 
   const booking = await reserveSlot({ ...input, status: "PENDING", holdMinutes: HOLD_MINUTES });
   try {
@@ -57,5 +62,6 @@ export async function createBooking(
 export async function cancelBookingAndRefund(input: CancelInput): Promise<BookingRecord> {
   const booking = await cancelBooking(input);
   await refundDeposit(booking.id, input.now);
+  pushSoon(booking.id);
   return booking;
 }

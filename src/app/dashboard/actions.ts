@@ -7,6 +7,7 @@ import { requireUser } from "@/server/auth/session";
 import { findOrCreateCustomer } from "@/server/customers";
 import { prisma } from "@/server/db/prisma";
 import { cancelBookingAndRefund, createBooking } from "@/server/bookings";
+import { pushSoon } from "@/server/calendar/sync";
 import { SchedulingError, rescheduleBooking } from "@/server/scheduling";
 import { replayEvent } from "@/server/webhooks";
 import { hhmmToMinutes } from "./_lib/format";
@@ -118,6 +119,7 @@ export async function rescheduleBookingAction(formData: FormData) {
   } catch (err) {
     fail(`/dashboard/bookings/${id}`, describe(err));
   }
+  pushSoon(id);
   revalidatePath("/dashboard");
   redirect(`/dashboard/bookings/${id}?ok=Booking+moved`);
 }
