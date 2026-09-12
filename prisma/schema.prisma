@@ -1,0 +1,279 @@
+// BookMeBot schema v1.
+//
+// Conventions
+// - Table and column names are snake_case in Postgres (@map / @@map) so the
+//   hand-written SQL in migrations reads naturally.
+// - All instants are `timestamptz` and stored in UTC. Local time only exists
+//   at the edges (rendering, parsing customer input) using Business.timezone.
+// - Weekly opening hours are stored as minutes-from-local-midnight, which is
+//   the only representation that survives DST transitions cleanly.
+//
+// Things Prisma cannot express live in prisma/migrations as raw SQL:
+// - the btree_gist extension
+// - EXCLUDE constraints that make double-booking impossible at the DB level
+// - the trigger that mirrors booking time ranges onto booking_resources
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy root
+// ---------------------------------------------------------------------------
+
+model Business {
+  id                 String   @id @default(uuid()) @db.Uuid
+  name               String
+  slug               String   @unique
+  /// IANA zone, e.g. "Europe/Bucharest". Every local-time calculation uses this.
+  timezone           String   @default("Europe/Bucharest")
+  /// Slot step when generating bookable times (minutes).
+  slotGranularityMin Int      @default(15) @map("slot_granularity_min")
+  /// Earliest a customer may book, relative to "now" (minutes).
+  minLeadMin         Int      @default(60) @map("min_lead_min")
+  /// Furthest into the future a customer may book (days).
+  maxAdvanceDays     Int      @default(60) @map("max_advance_days")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  staff                 Staff[]
+  resources             Resource[]
+  services              Service[]
+  customers             Customer[]
+  bookings              Booking[]
+  availabilityRules     AvailabilityRule[]
+  availabilityOverrides AvailabilityOverride[]
+
+  @@map("businesses")
+}
+
+// ---------------------------------------------------------------------------
+// Things that can be booked
+// ---------------------------------------------------------------------------
+
+model Staff {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  name       String
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  business              Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  services              ServiceStaff[]
+  bookings              Booking[]
+  availabilityRules     AvailabilityRule[]
+  availabilityOverrides AvailabilityOverride[]
+
+  @@index([businessId])
+  @@map("staff")
+}
+
+enum ResourceType {
+  CHAIR
+  ROOM
+  BAY
+  STATION
+
+  @@map("resource_type")
+}
+
+/// A physical thing a booking occupies in addition to a staff member
+/// (barber chair, treatment room, service bay).
+model Resource {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @map("business_id") @db.Uuid
+  name       String
+  type       ResourceType
+  active     Boolean      @default(true)
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookings BookingResource[]
+
+  @@index([businessId, type])
+  @@map("resources")
+}
+
+model Service {
+  id                   String        @id @default(uuid()) @db.Uuid
+  businessId           String        @map("business_id") @db.Uuid
+  name                 String
+  durationMin          Int           @map("duration_min")
+  priceCents           Int           @map("price_cents")
+  currency             String        @default("RON")
+  /// Time to keep free before the appointment (setup).
+  bufferBeforeMin      Int           @default(0) @map("buffer_before_min")
+  /// Time to keep free after the appointment (cleanup).
+  bufferAfterMin       Int           @default(0) @map("buffer_after_min")
+  /// If set, a booking must also reserve one free resource of this type.
+  requiredResourceType ResourceType? @map("required_resource_type")
+  /// Deposit collected at booking time; 0 means none.
+  depositCents         Int           @default(0) @map("deposit_cents")
+  active               Boolean       @default(true)
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staff    ServiceStaff[]
+  bookings Booking[]
+
+  @@index([businessId])
+  @@map("services")
+}
+
+/// Which staff members can perform which service.
+model ServiceStaff {
+  serviceId String @map("service_id") @db.Uuid
+  staffId   String @map("staff_id") @db.Uuid
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staff   Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, staffId])
+  @@map("service_staff")
+}
+
+// ---------------------------------------------------------------------------
+// Availability
+// ---------------------------------------------------------------------------
+
+/// Weekly recurring opening window. staffId null = business-wide hours.
+/// A staff member is available at time T only if both the business rule and
+/// (when present) their own rule cover T.
+model AvailabilityRule {
+  id         String  @id @default(uuid()) @db.Uuid
+  businessId String  @map("business_id") @db.Uuid
+  staffId    String? @map("staff_id") @db.Uuid
+  /// 0 = Sunday ... 6 = Saturday (JS Date.getDay convention)
+  weekday    Int
+  /// Minutes from local midnight, inclusive start.
+  startMin   Int     @map("start_min")
+  /// Minutes from local midnight, exclusive end. 24*60 = end of day.
+  endMin     Int     @map("end_min")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staff    Staff?   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, weekday])
+  @@map("availability_rules")
+}
+
+/// One-off exception for a specific local date: closed all day, or custom hours.
+/// Overrides win over weekly rules for that date.
+model AvailabilityOverride {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  staffId    String?  @map("staff_id") @db.Uuid
+  /// Local calendar date (no time, no zone).
+  date       DateTime @db.Date
+  closed     Boolean  @default(true)
+  startMin   Int?     @map("start_min")
+  endMin     Int?     @map("end_min")
+  reason     String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staff    Staff?   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, date])
+  @@map("availability_overrides")
+}
+
+// ---------------------------------------------------------------------------
+// Customers and bookings
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  /// E.164, e.g. +40721000000. Unique per business, not globally.
+  phone      String
+  name       String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@unique([businessId, phone])
+  @@map("customers")
+}
+
+enum BookingStatus {
+  /// Slot is held (e.g. awaiting deposit). Counts as occupied until holdExpiresAt.
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+
+  @@map("booking_status")
+}
+
+enum BookingSource {
+  DASHBOARD
+  WHATSAPP
+  SIMULATOR
+  API
+
+  @@map("booking_source")
+}
+
+model Booking {
+  id            String        @id @default(uuid()) @db.Uuid
+  businessId    String        @map("business_id") @db.Uuid
+  customerId    String        @map("customer_id") @db.Uuid
+  serviceId     String        @map("service_id") @db.Uuid
+  staffId       String        @map("staff_id") @db.Uuid
+  status        BookingStatus @default(CONFIRMED)
+  source        BookingSource @default(DASHBOARD)
+  /// Appointment start/end in UTC. Buffers are NOT included; the engine
+  /// applies them when computing free slots.
+  startsAt      DateTime      @map("starts_at") @db.Timestamptz
+  endsAt        DateTime      @map("ends_at") @db.Timestamptz
+  /// For PENDING bookings: when the hold lapses if not confirmed.
+  holdExpiresAt DateTime?     @map("hold_expires_at") @db.Timestamptz
+  notes         String?
+  /// Optimistic concurrency token for dashboard edits.
+  version       Int           @default(1)
+  cancelledAt   DateTime?     @map("cancelled_at") @db.Timestamptz
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  business  Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer  Customer          @relation(fields: [customerId], references: [id])
+  service   Service           @relation(fields: [serviceId], references: [id])
+  staff     Staff             @relation(fields: [staffId], references: [id])
+  resources BookingResource[]
+
+  @@index([businessId, startsAt])
+  @@index([staffId, startsAt])
+  @@index([customerId])
+  @@index([status, holdExpiresAt])
+  @@map("bookings")
+}
+
+/// Resources occupied by a booking. startsAt/endsAt/active are copies of the
+/// parent booking maintained by a DB trigger so the EXCLUDE constraint on this
+/// table can guard resource double-booking without a join.
+model BookingResource {
+  bookingId  String   @map("booking_id") @db.Uuid
+  resourceId String   @map("resource_id") @db.Uuid
+  startsAt   DateTime @map("starts_at") @db.Timestamptz
+  endsAt     DateTime @map("ends_at") @db.Timestamptz
+  active     Boolean  @default(true)
+
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id])
+
+  @@id([bookingId, resourceId])
+  @@index([resourceId, startsAt])
+  @@map("booking_resources")
+}

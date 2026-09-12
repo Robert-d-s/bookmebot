@@ -1,0 +1,9 @@
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+
+# pnpm 10 blocks postinstall scripts unless explicitly allowed.
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - prisma
+  - esbuild

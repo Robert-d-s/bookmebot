@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bookmebot
+          POSTGRES_PASSWORD: bookmebot
+          POSTGRES_DB: bookmebot
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U bookmebot -d bookmebot"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://bookmebot:bookmebot@localhost:5433/bookmebot?schema=public
+      DIRECT_URL: postgresql://bookmebot:bookmebot@localhost:5433/bookmebot?schema=public
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # Version comes from the packageManager field in package.json.
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install (runs prisma generate via postinstall)
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        run: pnpm db:deploy
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
