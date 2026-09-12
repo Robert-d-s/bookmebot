@@ -36,6 +36,7 @@ jobs:
       AUTH_SECRET: ci-auth-secret-not-real-at-least-32-chars
       WHATSAPP_APP_SECRET: ci-whatsapp-app-secret-not-real
       WHATSAPP_VERIFY_TOKEN: ci-verify-token
+      STRIPE_WEBHOOK_SECRET: whsec_ci_not_real_000000000000
 
     steps:
       - uses: actions/checkout@v7

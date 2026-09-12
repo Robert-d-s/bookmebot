@@ -46,4 +46,9 @@ export const STATUS_STYLE: Record<string, string> = {
   FAILED: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
   DEFERRED: "bg-violet-100 text-violet-900 dark:bg-violet-900 dark:text-violet-100",
   DEAD: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
+  REQUIRES_PAYMENT: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
+  PAID: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
+  REFUND_PENDING: "bg-violet-100 text-violet-900 dark:bg-violet-900 dark:text-violet-100",
+  REFUNDED: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
+  EXPIRED: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800",
 };

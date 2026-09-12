@@ -41,6 +41,11 @@ export const env = createEnv({
     /** For openai-compatible: e.g. https://api.groq.com/openai/v1 (Groq free tier). */
     LLM_BASE_URL: z.string().url().optional(),
     LLM_API_KEY: z.string().min(1).optional(),
+    /** Stripe test-mode keys. Unset = deposits are skipped and bookings confirm directly. */
+    STRIPE_SECRET_KEY: z.string().min(1).optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    /** Public base URL used in Checkout success/cancel links. */
+    APP_URL: z.string().url().default("http://localhost:3000"),
   },
   client: {},
   runtimeEnv: {
@@ -59,6 +64,9 @@ export const env = createEnv({
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     LLM_BASE_URL: process.env.LLM_BASE_URL,
     LLM_API_KEY: process.env.LLM_API_KEY,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    APP_URL: process.env.APP_URL,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === "1",

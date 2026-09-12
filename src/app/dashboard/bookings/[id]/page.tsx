@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/server/auth/session";
 import { getBooking, getBusiness, getCatalog } from "@/server/dashboard/queries";
+import { prisma } from "@/server/db/prisma";
 import { getAvailability } from "@/server/scheduling";
 import { type LocalDate, toLocalDate } from "@/server/scheduling/time";
 import { cancelBookingAction, rescheduleBookingAction } from "../../actions";
@@ -22,6 +23,7 @@ export default async function BookingPage(props: PageProps<"/dashboard/bookings/
   if (!booking) notFound();
   const tz = business.timezone;
   const active = booking.status === "CONFIRMED" || booking.status === "PENDING";
+  const payment = await prisma.payment.findUnique({ where: { bookingId: booking.id } });
 
   const moveDate = isDate(sp.date) ? sp.date : toLocalDate(booking.startsAt, tz);
   const moveStaff = typeof sp.staff === "string" ? sp.staff : "";
@@ -88,6 +90,34 @@ export default async function BookingPage(props: PageProps<"/dashboard/bookings/
           </div>
         )}
       </section>
+
+      {payment && (
+        <section className={`${card} space-y-1 text-sm`}>
+          <h2 className="font-medium">Deposit</h2>
+          <p>
+            {(payment.amountCents / 100).toFixed(2)} {payment.currency} ·{" "}
+            <Badge status={payment.status} />
+            {payment.paidAt && (
+              <span className="text-zinc-500"> paid {fmtDateTime(payment.paidAt, tz)}</span>
+            )}
+            {payment.refundedAt && (
+              <span className="text-zinc-500"> refunded {fmtDateTime(payment.refundedAt, tz)}</span>
+            )}
+          </p>
+          {payment.status === "REQUIRES_PAYMENT" && payment.checkoutUrl && (
+            <p>
+              Payment link (held until{" "}
+              {booking.holdExpiresAt ? fmtDateTime(booking.holdExpiresAt, tz) : "?"}):{" "}
+              <a className="underline" href={payment.checkoutUrl}>
+                open
+              </a>
+            </p>
+          )}
+          {payment.lastError && (
+            <p className="text-red-700 dark:text-red-300">{payment.lastError}</p>
+          )}
+        </section>
+      )}
 
       {active && (
         <>

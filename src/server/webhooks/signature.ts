@@ -27,3 +27,31 @@ export function verifySha256Header(
   if (scheme !== "sha256" || !hex) return false;
   return safeEqual(hex, hmacSha256Hex(secret, rawBody));
 }
+
+/**
+ * Stripe's scheme: `Stripe-Signature: t=<unix>,v1=<hex>[,v1=<hex>...]` where the
+ * signed payload is `${t}.${rawBody}` and the key is the endpoint's whsec_ secret.
+ * Timestamps older than `toleranceSec` are rejected to blunt replay.
+ */
+export function verifyStripeHeader(
+  secret: string,
+  rawBody: string,
+  headerValue: string | null,
+  now: Date = new Date(),
+  toleranceSec = 300,
+): boolean {
+  if (!headerValue) return false;
+  const parts = headerValue.split(",").map((p) => p.trim().split("=", 2));
+  const t = parts.find(([k]) => k === "t")?.[1];
+  const sigs = parts.filter(([k]) => k === "v1").map(([, v]) => v);
+  if (!t || sigs.length === 0 || !/^\d+$/.test(t)) return false;
+  if (Math.abs(now.getTime() / 1000 - Number(t)) > toleranceSec) return false;
+  const expected = hmacSha256Hex(secret, `${t}.${rawBody}`);
+  return sigs.some((s) => safeEqual(s, expected));
+}
+
+/** Build a Stripe-Signature header (used by the fake gateway and tests). */
+export function signStripe(secret: string, rawBody: string, now: Date = new Date()): string {
+  const t = Math.floor(now.getTime() / 1000);
+  return `t=${t},v1=${hmacSha256Hex(secret, `${t}.${rawBody}`)}`;
+}

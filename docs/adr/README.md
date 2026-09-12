@@ -21,3 +21,4 @@ Date: YYYY-MM-DD
 | [004](004-credentials-auth-jwt-sessions.md)         | Credentials login with JWT sessions, guarded in the proxy                      |
 | [005](005-channel-neutral-messaging.md)             | Channel-neutral messages, one log, simulator traffic through the webhook layer |
 | [006](006-llm-proposes-engine-decides.md)           | The model proposes, the engine decides; one loop for any brain                 |
+| [007](007-deposits-as-holds.md)                     | Deposits are holds; Stripe events drive state; a fake gateway keeps it local   |

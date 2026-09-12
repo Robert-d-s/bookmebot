@@ -6,12 +6,8 @@ import { z } from "zod";
 import { requireUser } from "@/server/auth/session";
 import { findOrCreateCustomer } from "@/server/customers";
 import { prisma } from "@/server/db/prisma";
-import {
-  SchedulingError,
-  cancelBooking,
-  rescheduleBooking,
-  reserveSlot,
-} from "@/server/scheduling";
+import { cancelBookingAndRefund, createBooking } from "@/server/bookings";
+import { SchedulingError, rescheduleBooking } from "@/server/scheduling";
 import { replayEvent } from "@/server/webhooks";
 import { hhmmToMinutes } from "./_lib/format";
 
@@ -62,7 +58,8 @@ export async function createBookingAction(formData: FormData) {
       input.phone,
       input.name || undefined,
     );
-    const booking = await reserveSlot({
+    // The owner books in person: no deposit is collected.
+    const { booking } = await createBooking({
       businessId: user.businessId,
       serviceId: input.service,
       staffId: input.staff || undefined,
@@ -70,6 +67,7 @@ export async function createBookingAction(formData: FormData) {
       startsAt: input.startsAt,
       notes: input.notes || undefined,
       source: "DASHBOARD",
+      collectDeposit: false,
     });
     revalidatePath("/dashboard");
     redirect(`/dashboard/bookings/${booking.id}?ok=Booking+created`);
@@ -83,7 +81,7 @@ export async function cancelBookingAction(formData: FormData) {
   const user = await requireUser();
   const id = uuid.parse(str(formData, "id"));
   try {
-    await cancelBooking({
+    await cancelBookingAndRefund({
       businessId: user.businessId,
       bookingId: id,
       expectedVersion: Number(str(formData, "version")) || undefined,

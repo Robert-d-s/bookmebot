@@ -1,4 +1,5 @@
 import { whatsappHandler, whatsappProvider } from "@/server/channels/whatsapp/provider";
+import { stripeHandler, stripeProvider } from "@/server/payments/provider";
 import { registerProvider } from "../registry";
 import { simulatorHandler, simulatorProvider } from "./simulator";
 
@@ -9,3 +10,4 @@ import { simulatorHandler, simulatorProvider } from "./simulator";
  */
 registerProvider(simulatorProvider, simulatorHandler);
 registerProvider(whatsappProvider, whatsappHandler);
+registerProvider(stripeProvider, stripeHandler);

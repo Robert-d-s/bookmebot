@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { businessIdBySlug } from "@/server/customers";
 import { handle } from "@/server/http/errors";
-import { cancelBooking, rescheduleBooking } from "@/server/scheduling";
+import { cancelBookingAndRefund } from "@/server/bookings";
+import { rescheduleBooking } from "@/server/scheduling";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext<"/api/bookings/
   return handle(async () => {
     const { id } = await ctx.params;
     const q = deleteQuery.parse(Object.fromEntries(req.nextUrl.searchParams));
-    const booking = await cancelBooking({
+    const booking = await cancelBookingAndRefund({
       businessId: await businessIdBySlug(q.business),
       bookingId: id,
     });

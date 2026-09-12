@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireInternalSecret } from "@/server/http/internal-auth";
+import { sweepPayments } from "@/server/payments";
 import { releaseExpiredHolds } from "@/server/scheduling";
 import { processDue } from "@/server/webhooks";
 
@@ -15,5 +16,12 @@ export async function GET(req: NextRequest) {
   if (denied) return denied;
 
   const [webhooks, releasedHolds] = await Promise.all([processDue(), releaseExpiredHolds()]);
-  return NextResponse.json({ ok: true, at: new Date().toISOString(), webhooks, releasedHolds });
+  const payments = await sweepPayments();
+  return NextResponse.json({
+    ok: true,
+    at: new Date().toISOString(),
+    webhooks,
+    releasedHolds,
+    payments,
+  });
 }

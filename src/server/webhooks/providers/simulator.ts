@@ -3,7 +3,8 @@ import { env } from "@/env";
 import { handleInboundMessage } from "@/server/channels/inbound";
 import { businessIdBySlug, findOrCreateCustomer } from "@/server/customers";
 import { prisma } from "@/server/db/prisma";
-import { NotFoundError, SchedulingError, cancelBooking, reserveSlot } from "@/server/scheduling";
+import { cancelBookingAndRefund, createBooking } from "@/server/bookings";
+import { NotFoundError, SchedulingError } from "@/server/scheduling";
 import { verifySha256Header } from "../signature";
 import type { EventHandler, WebhookProvider } from "../types";
 
@@ -85,7 +86,7 @@ export const simulatorHandler: EventHandler = async (event) => {
           p.data.customer.phone,
           p.data.customer.name,
         );
-        const booking = await reserveSlot({
+        const { booking, payment } = await createBooking({
           businessId,
           serviceId: p.data.service,
           staffId: p.data.staff,
@@ -93,7 +94,15 @@ export const simulatorHandler: EventHandler = async (event) => {
           startsAt: p.data.startsAt,
           source: "SIMULATOR",
         });
-        return { kind: "processed", result: { bookingId: booking.id, staffId: booking.staffId } };
+        return {
+          kind: "processed",
+          result: {
+            bookingId: booking.id,
+            staffId: booking.staffId,
+            status: booking.status,
+            paymentUrl: payment?.url,
+          },
+        };
       } catch (err) {
         // A business "no" is final for this event; anything else may be transient.
         if (err instanceof SchedulingError) return { kind: "skipped", reason: err.message };
@@ -122,7 +131,10 @@ export const simulatorHandler: EventHandler = async (event) => {
           where: { id: bookingId },
           select: { businessId: true },
         });
-        const cancelled = await cancelBooking({ businessId: booking.businessId, bookingId });
+        const cancelled = await cancelBookingAndRefund({
+          businessId: booking.businessId,
+          bookingId,
+        });
         return { kind: "processed", result: { bookingId, status: cancelled.status } };
       } catch (err) {
         if (err instanceof NotFoundError || err instanceof SchedulingError) {

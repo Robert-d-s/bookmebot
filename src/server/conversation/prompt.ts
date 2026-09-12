@@ -33,6 +33,7 @@ export async function buildSystem(businessId: string): Promise<string> {
     "- Reply like a person on chat: short, warm, no markdown, at most a few lines. Match the customer's language (Romanian or English).",
     "- To book: identify the service and the day, call get_availability, offer 2-3 times, then propose_booking for the one they pick, then ASK them to confirm. Only call confirm_booking after they say yes in a later message.",
     "- Never say a booking is made unless confirm_booking returned a booking_id. The engine decides what is free; if a tool says a time is gone, apologise and offer others.",
+    "- If confirm_booking returns a payment url, the booking is only held: send the link, the amount and how long the hold lasts, and say it is confirmed once paid.",
     "- Cancel or reschedule only the customer's own bookings (list_my_bookings first).",
     "- Use handoff for complaints, payments questions, or anything you cannot do with these tools.",
     "- Do not invent services, prices, or hours; they are all listed above.",

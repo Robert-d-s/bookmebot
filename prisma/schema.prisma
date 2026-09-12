@@ -53,6 +53,7 @@ model Business {
   users                 User[]
   messages              Message[]
   conversations         Conversation[]
+  payments              Payment[]
 
   @@map("businesses")
 }
@@ -284,6 +285,7 @@ model Booking {
   service   Service           @relation(fields: [serviceId], references: [id])
   staff     Staff             @relation(fields: [staffId], references: [id])
   resources BookingResource[]
+  payment   Payment?
 
   @@index([businessId, startsAt])
   @@index([staffId, startsAt])
@@ -451,4 +453,50 @@ model Conversation {
 
   @@index([businessId, updatedAt])
   @@map("conversations")
+}
+
+// ---------------------------------------------------------------------------
+// Payments (phase 6). One deposit per booking, collected via Stripe Checkout
+// in test mode; refunded on cancel. Provider events arrive through the
+// webhook layer.
+// ---------------------------------------------------------------------------
+
+enum PaymentStatus {
+  /// Checkout created, customer has not paid. Booking is PENDING (held).
+  REQUIRES_PAYMENT
+  PAID
+  /// Cancel happened; refund requested but not yet confirmed by Stripe.
+  REFUND_PENDING
+  REFUNDED
+  /// Checkout expired or hold lapsed before payment.
+  EXPIRED
+  FAILED
+
+  @@map("payment_status")
+}
+
+model Payment {
+  id                String        @id @default(uuid()) @db.Uuid
+  businessId        String        @map("business_id") @db.Uuid
+  bookingId         String        @unique @map("booking_id") @db.Uuid
+  provider          String        @default("stripe")
+  amountCents       Int           @map("amount_cents")
+  currency          String
+  status            PaymentStatus @default(REQUIRES_PAYMENT)
+  checkoutSessionId String?       @unique @map("checkout_session_id")
+  checkoutUrl       String?       @map("checkout_url")
+  paymentIntentId   String?       @unique @map("payment_intent_id")
+  chargeId          String?       @map("charge_id")
+  refundId          String?       @map("refund_id")
+  lastError         String?       @map("last_error")
+  paidAt            DateTime?     @map("paid_at") @db.Timestamptz
+  refundedAt        DateTime?     @map("refunded_at") @db.Timestamptz
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, status])
+  @@map("payments")
 }

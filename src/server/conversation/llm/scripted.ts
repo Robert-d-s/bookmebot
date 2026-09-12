@@ -108,7 +108,7 @@ export class ScriptedLlm implements LlmClient {
     const byId = /service_id=(\S+)/.exec(raw)?.[1];
     const service =
       services.find((s) => s.id === byId) ??
-      services.find((s) => t.includes(s.name.toLowerCase())) ??
+      matchService(t, services) ??
       rememberedService(req.turns, services);
     if (!service) {
       return say(
@@ -153,8 +153,16 @@ export class ScriptedLlm implements LlmClient {
         return say(
           `Shall I book ${out.service} on ${out.when} with ${out.staff}? Reply yes to confirm.`,
         );
-      case "confirm_booking":
+      case "confirm_booking": {
+        const pay = out.payment as
+          { url: string; amount: string; hold_minutes: number } | undefined;
+        if (pay) {
+          return say(
+            `Almost there. To confirm ${out.service} on ${out.when} with ${out.staff}, pay the ${pay.amount} deposit here:\n${pay.url}\nThe time is held for ${pay.hold_minutes} minutes.`,
+          );
+        }
         return say(`Booked: ${out.service} on ${out.when} with ${out.staff}. See you then!`, MENU);
+      }
       case "list_my_bookings": {
         const bookings = out.bookings as unknown[];
         return say(
@@ -216,12 +224,20 @@ function rememberedService(turns: Turn[], services: Service[]): Service | undefi
     if (t.role !== "user") continue;
     const low = t.text.toLowerCase();
     const byId = /service_id=(\S+)/.exec(t.text)?.[1];
-    const s =
-      services.find((x) => x.id === byId) ??
-      services.find((x) => low.includes(x.name.toLowerCase()));
+    const s = services.find((x) => x.id === byId) ?? matchService(low, services);
     if (s) return s;
   }
   return undefined;
+}
+
+/** Longest service name contained in the text wins ("haircut + beard" over "haircut"). */
+export function matchService<T extends { name: string }>(
+  text: string,
+  services: T[],
+): T | undefined {
+  return services
+    .filter((s) => text.includes(s.name.toLowerCase()))
+    .sort((a, b) => b.name.length - a.name.length)[0];
 }
 
 function customerName(context: string): string {

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { businessIdBySlug, findOrCreateCustomer } from "@/server/customers";
 import { handle } from "@/server/http/errors";
-import { reserveSlot } from "@/server/scheduling";
+import { createBooking } from "@/server/bookings";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       input.customer.phone,
       input.customer.name,
     );
-    const booking = await reserveSlot({
+    const { booking, payment } = await createBooking({
       businessId,
       serviceId: input.service,
       staffId: input.staff,
@@ -40,6 +40,6 @@ export async function POST(req: NextRequest) {
       notes: input.notes,
       source: "API",
     });
-    return NextResponse.json({ booking }, { status: 201 });
+    return NextResponse.json({ booking, payment }, { status: 201 });
   });
 }

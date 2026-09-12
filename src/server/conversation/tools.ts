@@ -1,13 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { BookingSource, Channel } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
-import {
-  SchedulingError,
-  cancelBooking,
-  getAvailability,
-  rescheduleBooking,
-  reserveSlot,
-} from "@/server/scheduling";
+import { cancelBookingAndRefund, createBooking } from "@/server/bookings";
+import { SchedulingError, getAvailability, rescheduleBooking } from "@/server/scheduling";
 import { type LocalDate, toLocalDate } from "@/server/scheduling/time";
 import type { ToolDef } from "./llm/types";
 import type { ConversationState } from "./state";
@@ -75,7 +70,7 @@ export const TOOL_DEFS: ToolDef[] = [
   {
     name: "confirm_booking",
     description:
-      "Create the booking for a proposal the customer has explicitly confirmed in their latest message. Fails if the proposal was made in this same turn.",
+      "Create the booking for a proposal the customer has explicitly confirmed in their latest message. Fails if the proposal was made in this same turn. May return a payment url: then the booking is only held until the deposit is paid.",
     inputSchema: obj({ proposal_id: { type: "string" } }, ["proposal_id"]),
   },
   {
@@ -241,8 +236,8 @@ export async function executeTool(
         throw new ToolError("the customer has not answered the proposal yet; ask them to confirm");
       if (ctx.now.getTime() - Date.parse(p.createdAt) > PROPOSAL_TTL_MS)
         throw new ToolError("the proposal expired; check availability again");
-      const booking = await wrap(() =>
-        reserveSlot({
+      const { booking, payment } = await wrap(() =>
+        createBooking({
           businessId: ctx.businessId,
           serviceId: p.serviceId,
           staffId: p.staffId,
@@ -266,6 +261,17 @@ export async function executeTool(
         service: service.name,
         when: fmt(booking.startsAt, ctx.timezone),
         staff: staff.name,
+        ...(payment
+          ? {
+              payment: {
+                url: payment.url,
+                amount: price(payment.amountCents, payment.currency),
+                hold_minutes: Math.round(
+                  (payment.expiresAt.getTime() - ctx.now.getTime()) / 60_000,
+                ),
+              },
+            }
+          : {}),
       };
     }
     case "list_my_bookings": {
@@ -300,7 +306,7 @@ export async function executeTool(
         }));
       if (!own) throw new ToolError("no such booking");
       const b = await wrap(() =>
-        cancelBooking({ businessId: ctx.businessId, bookingId: own.id, now: ctx.now }),
+        cancelBookingAndRefund({ businessId: ctx.businessId, bookingId: own.id, now: ctx.now }),
       );
       return {
         booking_id: b.id,
