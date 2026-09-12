@@ -17,8 +17,8 @@ multi-resource scheduling engine and a webhook reliability layer.
 | Phase | Scope                                                                                  | State |
 | ----- | -------------------------------------------------------------------------------------- | ----- |
 | 0     | Foundation: repo, Postgres, Prisma schema v1, seed, CI                                 | done  |
-| 1     | Scheduling engine: slots, reserve/cancel/reschedule, multi-resource, concurrency tests | next  |
-| 2     | Webhook reliability layer: dedupe, retries, dead letters                               |       |
+| 1     | Scheduling engine: slots, reserve/cancel/reschedule, multi-resource, concurrency tests | done  |
+| 2     | Webhook reliability layer: dedupe, retries, dead letters                               | next  |
 | 3     | Auth + owner dashboard + first deploy                                                  |       |
 | 4     | WhatsApp channel + simulator channel                                                   |       |
 | 5     | AI conversation layer (zero-spend providers)                                           |       |
@@ -46,7 +46,7 @@ src/app/            Next.js routes (dashboard UI, API route handlers)
 src/server/         domain layer: scheduling, inbound webhooks, outbox, channels, ...
 src/generated/      Prisma client (generated, not committed)
 prisma/             schema, migrations (some hand-written SQL), seed
-tests/              unit, integration (real Postgres), concurrency
+tests/              unit (pure + property), integration (real Postgres), concurrency
 docs/learning/      one note per phase explaining what was built and why
 docs/adr/           architecture decision records
 ```
@@ -55,4 +55,15 @@ docs/adr/           architecture decision records
 
 - [ADR-000](docs/adr/000-backend-inside-nextjs.md): backend inside Next.js
 - [ADR-001](docs/adr/001-db-level-double-booking-guard.md): exclusion constraints guard double-booking
+- [ADR-002](docs/adr/002-advisory-lock-serialises-writes.md): one advisory lock per business serialises writes
 - [Learning note 00](docs/learning/00-foundation.md): foundation
+- [Learning note 01](docs/learning/01-scheduling-engine.md): scheduling engine
+
+## API (phase 1, no auth yet)
+
+| Method | Path                | Purpose                                                                             |
+| ------ | ------------------- | ----------------------------------------------------------------------------------- |
+| GET    | `/api/availability` | bookable slots for a service, `business`, `service`, optional `staff`, `from`, `to` |
+| POST   | `/api/bookings`     | reserve a slot; customer identified by E.164 phone                                  |
+| PATCH  | `/api/bookings/:id` | reschedule, optionally to another staff or `"any"`                                  |
+| DELETE | `/api/bookings/:id` | cancel                                                                              |

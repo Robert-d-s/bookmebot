@@ -28,8 +28,8 @@ table needs the time range without a join, a trigger copies `starts_at`, `ends_a
 `active` flag from the parent booking on every insert/update.
 
 The constraint is the **last line of defence**. The scheduling engine (phase 1) still
-serialises writes per staff with an advisory lock and checks availability, buffers and
-opening hours, which the constraint knows nothing about. The constraint guarantees that
+serialises writes per business with an advisory lock ([ADR-002](002-advisory-lock-serialises-writes.md))
+and checks availability, buffers and opening hours, which the constraint knows nothing about. The constraint guarantees that
 even a bug in that code cannot produce a double booking.
 
 ## Consequences
