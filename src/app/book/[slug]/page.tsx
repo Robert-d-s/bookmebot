@@ -134,6 +134,10 @@ export default async function PublicBookPage(props: PageProps<"/book/[slug]">) {
                 className={`${input} mt-1 block`}
               />
             </label>
+            <label className="text-sm">
+              Email (optional, for the confirmation)
+              <input name="email" type="email" className={`${input} mt-1 block`} />
+            </label>
           </div>
           {service.depositCents > 0 && (
             <p className="text-sm text-zinc-500">

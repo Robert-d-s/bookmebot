@@ -51,6 +51,10 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     /** Sentry (free tier). Server DSN; NEXT_PUBLIC_SENTRY_DSN for the browser. */
     SENTRY_DSN: z.string().url().optional(),
+    /** Resend (free tier). Unset = emails are logged, not sent. */
+    RESEND_API_KEY: z.string().min(1).optional(),
+    /** Sender address. Without a verified domain Resend only delivers from onboarding@resend.dev to your own inbox. */
+    EMAIL_FROM: z.string().default("BookMeBot <onboarding@resend.dev>"),
     /** PostHog (free tier). */
     POSTHOG_KEY: z.string().min(1).optional(),
     POSTHOG_HOST: z.string().url().default("https://eu.i.posthog.com"),
@@ -78,6 +82,8 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     SENTRY_DSN: process.env.SENTRY_DSN,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    EMAIL_FROM: process.env.EMAIL_FROM,
     POSTHOG_KEY: process.env.POSTHOG_KEY,
     POSTHOG_HOST: process.env.POSTHOG_HOST,
   },

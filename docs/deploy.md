@@ -60,8 +60,10 @@ Nothing in the app is host-specific, so any Node host plus any Postgres works to
    | Error reporting           | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`; `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT` only for source-map upload | 08   |
    | Product analytics         | `POSTHOG_KEY`, optional `POSTHOG_HOST` (default EU)                                                                  | 08   |
 
-   Without any optional variable: the scripted brain answers chats, deposits are
-   skipped, no calendar sync, no reporting. Everything else works.
+| Email (sign-in links, confirmations) | `RESEND_API_KEY`, optional `EMAIL_FROM` | 10 |
+
+Without any optional variable: the scripted brain answers chats, deposits are
+skipped, no calendar sync, no reporting. Everything else works.
 
 3. Deploy, then verify:
    - `https://<app>/api/health` returns `{"ok":true,"db":"up"}`

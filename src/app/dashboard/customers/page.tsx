@@ -19,6 +19,7 @@ export default async function CustomersPage() {
             <tr>
               <th className="py-1 pr-4">Name</th>
               <th className="py-1 pr-4">Phone</th>
+              <th className="py-1 pr-4">Email</th>
               <th className="py-1 pr-4">Bookings</th>
               <th className="py-1 pr-4">Last booking</th>
             </tr>
@@ -32,6 +33,7 @@ export default async function CustomersPage() {
                   </Link>
                 </td>
                 <td className="py-1 pr-4 font-mono">{c.phone}</td>
+                <td className="py-1 pr-4">{c.email ?? "—"}</td>
                 <td className="py-1 pr-4">{c._count.bookings}</td>
                 <td className="py-1 pr-4">
                   {c.bookings[0] ? (

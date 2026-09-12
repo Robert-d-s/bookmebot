@@ -1,5 +1,6 @@
 import { track } from "@/server/analytics";
 import { pushSoon } from "@/server/calendar/sync";
+import { notifyBookingCancelled, notifyBookingConfirmed } from "@/server/email/notifications";
 import { prisma } from "@/server/db/prisma";
 import {
   type BookingRecord,
@@ -39,6 +40,7 @@ export async function createBooking(
   if (!deposit) {
     const booking = await reserveSlot({ ...input, status: "CONFIRMED" });
     pushSoon(booking.id);
+    void notifyBookingConfirmed(booking.id);
     track(input.businessId, "booking_created", { source: booking.source, deposit: false });
     return { booking };
   }
@@ -78,6 +80,7 @@ export async function cancelBookingAndRefund(
   const booking = await cancelBooking(input);
   const payment = await refundDeposit(booking.id, input.now, input.refundPolicy ?? "always");
   pushSoon(booking.id);
+  void notifyBookingCancelled(booking.id, payment?.status);
   track(input.businessId, "booking_cancelled", {
     source: booking.source,
     deposit: payment?.status ?? "NONE",

@@ -12,11 +12,16 @@ export async function businessIdBySlug(slug: string): Promise<string> {
  * Customers are identified by phone within a business (WhatsApp sender id
  * later). First contact creates the row; a later name fills in a blank one.
  */
-export async function findOrCreateCustomer(businessId: string, phone: string, name?: string) {
+export async function findOrCreateCustomer(
+  businessId: string,
+  phone: string,
+  name?: string,
+  email?: string,
+) {
   return prisma.customer.upsert({
     where: { businessId_phone: { businessId, phone } },
-    create: { businessId, phone, name },
-    update: name ? { name } : {},
-    select: { id: true, phone: true, name: true },
+    create: { businessId, phone, name, email },
+    update: { ...(name ? { name } : {}), ...(email ? { email } : {}) },
+    select: { id: true, phone: true, name: true, email: true },
   });
 }

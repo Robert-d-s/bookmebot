@@ -27,19 +27,26 @@ export async function publicBookAction(formData: FormData) {
           .string()
           .regex(/^\+[1-9]\d{6,14}$/, "phone must be international, e.g. +40721000000"),
         name: z.string().min(1, "name is required").max(100),
+        email: z.union([z.string().email("email looks wrong"), z.literal("")]),
       })
       .parse({
         service: str(formData, "service"),
         startsAt: str(formData, "startsAt"),
         phone: str(formData, "phone"),
         name: str(formData, "name"),
+        email: str(formData, "email"),
       });
   } catch (err) {
     back(err instanceof z.ZodError ? err.issues.map((i) => i.message).join("; ") : "invalid input");
   }
   try {
     const businessId = await businessIdBySlug(slug);
-    const customer = await findOrCreateCustomer(businessId, input!.phone, input!.name);
+    const customer = await findOrCreateCustomer(
+      businessId,
+      input!.phone,
+      input!.name,
+      input!.email || undefined,
+    );
     const { booking, payment } = await createBooking({
       businessId,
       serviceId: input!.service,

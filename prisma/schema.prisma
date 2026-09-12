@@ -233,6 +233,8 @@ model Customer {
   /// E.164, e.g. +40721000000. Unique per business, not globally.
   phone      String
   name       String?
+  /// Optional; used for booking confirmations when present.
+  email      String?
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 

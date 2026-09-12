@@ -30,6 +30,8 @@ verified with Resend. The demo has one owner and must run from a fresh clone wit
 
 - Swapping in GitHub or Google login is one provider entry and no schema change; the
   JWT callback already copies `businessId` from the user row.
+- Passwordless sign-in was added later without an adapter: the Credentials provider also
+  accepts a signed, expiring `magicToken` emailed via Resend (learning note 10).
 - JWT sessions cannot be revoked server-side before expiry (30 days by default). For a
   demo this is acceptable; a session table via `@auth/prisma-adapter` is the fix if it
   ever matters.

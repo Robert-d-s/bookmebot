@@ -9,24 +9,24 @@ multi-resource scheduling engine and a webhook reliability layer.
 
 - Next.js 16 (App Router, route handlers, server actions), TypeScript, React 19, Tailwind v4
 - PostgreSQL 16 with Prisma 7 (local Docker for dev and tests, Supabase free tier hosted)
-- Auth.js v5 (credentials), Meta WhatsApp Cloud API, Google Calendar API, Stripe (test mode)
+- Auth.js v5 (password or emailed sign-in link), Resend, Meta WhatsApp Cloud API, Google Calendar API, Stripe (test mode)
 - Chat brain: Claude via the official SDK, any OpenAI-compatible endpoint (free tiers), or a scripted rule engine
 - Vercel (Hobby) for hosting, GitHub Actions for CI and scheduled jobs
 
 ## Status
 
-| Phase | Scope                                                                                  | State |
-| ----- | -------------------------------------------------------------------------------------- | ----- |
-| 0     | Foundation: repo, Postgres, Prisma schema v1, seed, CI                                 | done  |
-| 1     | Scheduling engine: slots, reserve/cancel/reschedule, multi-resource, concurrency tests | done  |
-| 2     | Webhook reliability layer: dedupe, retries, dead letters                               | done  |
-| 3     | Auth + owner dashboard (deploy guide ready, see docs/deploy.md)                        | done  |
-| 4     | WhatsApp channel + simulator channel                                                   | done  |
-| 5     | AI conversation layer: tool loop, Claude or a zero-spend rule engine                   | done  |
-| 6     | Payments: deposits as holds, refunds on cancel, Stripe test mode + local fake gateway  | done  |
-| 7     | Google Calendar two-way sync: push by booking version, pull blocks, demo calendar      | done  |
-| 8     | Ops: RLS on every table + tenant role, Sentry, PostHog, deploy checklist               | done  |
-| +     | Extensions: refund cutoff, public booking page with manage links, per-staff calendars  | done  |
+| Phase | Scope                                                                                        | State |
+| ----- | -------------------------------------------------------------------------------------------- | ----- |
+| 0     | Foundation: repo, Postgres, Prisma schema v1, seed, CI                                       | done  |
+| 1     | Scheduling engine: slots, reserve/cancel/reschedule, multi-resource, concurrency tests       | done  |
+| 2     | Webhook reliability layer: dedupe, retries, dead letters                                     | done  |
+| 3     | Auth + owner dashboard (deploy guide ready, see docs/deploy.md)                              | done  |
+| 4     | WhatsApp channel + simulator channel                                                         | done  |
+| 5     | AI conversation layer: tool loop, Claude or a zero-spend rule engine                         | done  |
+| 6     | Payments: deposits as holds, refunds on cancel, Stripe test mode + local fake gateway        | done  |
+| 7     | Google Calendar two-way sync: push by booking version, pull blocks, demo calendar            | done  |
+| 8     | Ops: RLS on every table + tenant role, Sentry, PostHog, deploy checklist                     | done  |
+| +     | Extensions: refund cutoff, public booking page with manage links, per-staff calendars, email | done  |
 
 ## Design highlights (the hard parts)
 
@@ -75,7 +75,7 @@ Claude takes over through the same tools, or any free OpenAI-compatible endpoint
 src/app/            /login, /dashboard/*, /book/[slug] (public booking), /pay/[session], /api/*
 src/server/         scheduling (engine), bookings (orchestration), payments, calendar,
                     webhooks (reliability layer), channels (WhatsApp, simulator),
-                    conversation (agent, tools, LLM clients), auth, customers, http, analytics
+                    conversation (agent, tools, LLM clients), email, auth, customers, http, analytics
 src/generated/      Prisma client (generated, not committed)
 prisma/             schema, migrations (some hand-written SQL), seed
 tests/              unit (pure + property), integration (real Postgres), concurrency
@@ -105,6 +105,7 @@ docs/adr/           architecture decision records
 - [Learning note 07](docs/learning/07-calendar-sync.md): Google Calendar two-way sync
 - [Learning note 08](docs/learning/08-ops.md): RLS, Sentry, PostHog
 - [Learning note 09](docs/learning/09-extensions.md): refund cutoff, public booking page, per-staff calendars
+- [Learning note 10](docs/learning/10-email.md): sign-in links and booking emails with Resend
 - [Deploy guide](docs/deploy.md): Vercel Hobby + Supabase free tier
 
 ## API (booking routes are customer-facing and unauthenticated by design; cron and admin routes take `Authorization: Bearer $CRON_SECRET`; the dashboard uses sessions)
