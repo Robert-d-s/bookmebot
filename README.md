@@ -18,8 +18,8 @@ multi-resource scheduling engine and a webhook reliability layer.
 | ----- | -------------------------------------------------------------------------------------- | ----- |
 | 0     | Foundation: repo, Postgres, Prisma schema v1, seed, CI                                 | done  |
 | 1     | Scheduling engine: slots, reserve/cancel/reschedule, multi-resource, concurrency tests | done  |
-| 2     | Webhook reliability layer: dedupe, retries, dead letters                               | next  |
-| 3     | Auth + owner dashboard + first deploy                                                  |       |
+| 2     | Webhook reliability layer: dedupe, retries, dead letters                               | done  |
+| 3     | Auth + owner dashboard + first deploy                                                  | next  |
 | 4     | WhatsApp channel + simulator channel                                                   |       |
 | 5     | AI conversation layer (zero-spend providers)                                           |       |
 | 6     | Payments: deposits and refunds via Stripe test mode                                    |       |
@@ -43,7 +43,7 @@ pnpm check                      # typecheck + lint + tests (what CI runs)
 
 ```
 src/app/            Next.js routes (dashboard UI, API route handlers)
-src/server/         domain layer: scheduling, inbound webhooks, outbox, channels, ...
+src/server/         domain layer: scheduling, webhooks, customers, http helpers, ...
 src/generated/      Prisma client (generated, not committed)
 prisma/             schema, migrations (some hand-written SQL), seed
 tests/              unit (pure + property), integration (real Postgres), concurrency
@@ -56,10 +56,12 @@ docs/adr/           architecture decision records
 - [ADR-000](docs/adr/000-backend-inside-nextjs.md): backend inside Next.js
 - [ADR-001](docs/adr/001-db-level-double-booking-guard.md): exclusion constraints guard double-booking
 - [ADR-002](docs/adr/002-advisory-lock-serialises-writes.md): one advisory lock per business serialises writes
+- [ADR-003](docs/adr/003-inbound-webhooks-persist-then-process.md): webhooks are persisted first, processed second
 - [Learning note 00](docs/learning/00-foundation.md): foundation
 - [Learning note 01](docs/learning/01-scheduling-engine.md): scheduling engine
+- [Learning note 02](docs/learning/02-webhook-reliability.md): webhook reliability layer
 
-## API (phase 1, no auth yet)
+## API (no auth yet; cron and admin routes take `Authorization: Bearer $CRON_SECRET`)
 
 | Method | Path                | Purpose                                                                             |
 | ------ | ------------------- | ----------------------------------------------------------------------------------- |

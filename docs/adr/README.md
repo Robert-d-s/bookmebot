@@ -12,8 +12,9 @@ Date: YYYY-MM-DD
 ## Consequences
 ```
 
-| ADR                                           | Title                                                           |
-| --------------------------------------------- | --------------------------------------------------------------- |
-| [000](000-backend-inside-nextjs.md)           | Backend lives inside Next.js, no separate API service           |
-| [001](001-db-level-double-booking-guard.md)   | Exclusion constraints, not unique indexes, guard double-booking |
-| [002](002-advisory-lock-serialises-writes.md) | One advisory lock per business serialises booking writes        |
+| ADR                                                 | Title                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------- |
+| [000](000-backend-inside-nextjs.md)                 | Backend lives inside Next.js, no separate API service                     |
+| [001](001-db-level-double-booking-guard.md)         | Exclusion constraints, not unique indexes, guard double-booking           |
+| [002](002-advisory-lock-serialises-writes.md)       | One advisory lock per business serialises booking writes                  |
+| [003](003-inbound-webhooks-persist-then-process.md) | Inbound webhooks are persisted first, processed second, claimed by status |

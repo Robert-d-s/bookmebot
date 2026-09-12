@@ -277,3 +277,70 @@ model BookingResource {
   @@index([resourceId, startsAt])
   @@map("booking_resources")
 }
+
+// ---------------------------------------------------------------------------
+// Inbound webhooks (phase 2). One layer for WhatsApp, payments and calendar.
+// ---------------------------------------------------------------------------
+
+/// One HTTP delivery from a provider, stored raw before anything else happens.
+/// Kept even when the signature fails, so bad traffic can be inspected.
+model WebhookDelivery {
+  id             String   @id @default(uuid()) @db.Uuid
+  provider       String
+  rawBody        String   @map("raw_body")
+  headers        Json
+  signatureValid Boolean  @map("signature_valid")
+  receivedAt     DateTime @default(now()) @map("received_at") @db.Timestamptz
+
+  events InboundEvent[]
+
+  @@index([provider, receivedAt])
+  @@map("webhook_deliveries")
+}
+
+enum InboundEventStatus {
+  /// Persisted, not yet attempted.
+  RECEIVED
+  /// Claimed by a worker.
+  PROCESSING
+  PROCESSED
+  /// Handler said "nothing to do" (e.g. business rule rejected it).
+  SKIPPED
+  /// Transient failure, will be retried at next_attempt_at.
+  FAILED
+  /// Waiting for a sibling event (out-of-order delivery), retried like FAILED.
+  DEFERRED
+  /// Gave up. Inspect and replay by hand.
+  DEAD
+
+  @@map("inbound_event_status")
+}
+
+/// One logical event extracted from a delivery (a delivery may carry several).
+/// (provider, provider_event_id) is unique: redelivery is a no-op.
+model InboundEvent {
+  id              String             @id @default(uuid()) @db.Uuid
+  deliveryId      String             @map("delivery_id") @db.Uuid
+  provider        String
+  providerEventId String             @map("provider_event_id")
+  eventType       String             @map("event_type")
+  /// Groups related events (a payment id, a chat thread, a booking ref) so an
+  /// event that arrived early can be re-run when its sibling lands.
+  correlationKey  String?            @map("correlation_key")
+  payload         Json
+  status          InboundEventStatus @default(RECEIVED)
+  attempts        Int                @default(0)
+  nextAttemptAt   DateTime?          @map("next_attempt_at") @db.Timestamptz
+  lastError       String?            @map("last_error")
+  /// What the handler produced, for inspection and for siblings to read.
+  result          Json?
+  receivedAt      DateTime           @default(now()) @map("received_at") @db.Timestamptz
+  processedAt     DateTime?          @map("processed_at") @db.Timestamptz
+
+  delivery WebhookDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerEventId])
+  @@index([status, nextAttemptAt])
+  @@index([provider, correlationKey])
+  @@map("inbound_events")
+}

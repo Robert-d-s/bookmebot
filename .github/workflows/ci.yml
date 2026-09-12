@@ -31,6 +31,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://bookmebot:bookmebot@localhost:5433/bookmebot?schema=public
       DIRECT_URL: postgresql://bookmebot:bookmebot@localhost:5433/bookmebot?schema=public
+      CRON_SECRET: ci-cron-secret-not-real-0000
+      WEBHOOK_SIMULATOR_SECRET: ci-simulator-secret-not-real
 
     steps:
       - uses: actions/checkout@v7

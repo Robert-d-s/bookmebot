@@ -16,7 +16,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:reset": "prisma migrate reset --force",
     "db:seed": "prisma db seed",
