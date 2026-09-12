@@ -13,7 +13,8 @@ import { authConfig } from "@/server/auth/config";
 const { auth } = NextAuth(authConfig);
 // auth(fn) returns a NextMiddleware that runs `authorized` first, then fn.
 // The parameter types pick the middleware overload over the route-handler one.
-const withAuth = auth((_request: NextRequest, _event: NextFetchEvent): undefined => undefined);
+type Passthrough = (request: NextRequest, event: NextFetchEvent) => undefined;
+const withAuth = auth((() => undefined) as Passthrough);
 
 export function proxy(request: NextRequest, event: NextFetchEvent) {
   return withAuth(request, event);
