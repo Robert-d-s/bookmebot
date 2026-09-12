@@ -172,8 +172,15 @@ export class ScriptedLlm implements LlmClient {
           bookings.length ? undefined : MENU,
         );
       }
-      case "cancel_booking":
-        return say(`Cancelled your ${out.service} on ${out.when}.`, MENU);
+      case "cancel_booking": {
+        const note =
+          out.deposit === "FORFEITED"
+            ? " Since this is inside the cancellation cutoff, the deposit is not refunded."
+            : out.deposit === "REFUNDED" || out.deposit === "REFUND_PENDING"
+              ? " Your deposit will be refunded."
+              : "";
+        return say(`Cancelled your ${out.service} on ${out.when}.${note}`, MENU);
+      }
       default:
         return say("Done.", MENU);
     }

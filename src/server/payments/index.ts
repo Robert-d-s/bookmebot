@@ -124,10 +124,33 @@ export async function markCheckoutExpired(checkoutSessionId: string, now: Date =
   return { payment, changed: true };
 }
 
-/** Called after a booking is cancelled. Safe to call when there is nothing to refund. */
-export async function refundDeposit(bookingId: string, now: Date = new Date()) {
-  const payment = await prisma.payment.findUnique({ where: { bookingId } });
+export type RefundPolicy = "apply" | "always";
+
+/**
+ * Called after a booking is cancelled. Safe to call when there is nothing to
+ * refund. With policy "apply", a paid deposit is kept (FORFEITED) when the
+ * cancellation is inside the business's refund cutoff; "always" is what the
+ * owner gets from the dashboard.
+ */
+export async function refundDeposit(
+  bookingId: string,
+  now: Date = new Date(),
+  policy: RefundPolicy = "always",
+) {
+  const payment = await prisma.payment.findUnique({
+    where: { bookingId },
+    include: { booking: { include: { business: { select: { refundCutoffHours: true } } } } },
+  });
   if (!payment) return null;
+  if (policy === "apply" && payment.status === "PAID") {
+    const hoursBefore = (payment.booking.startsAt.getTime() - now.getTime()) / 3_600_000;
+    if (hoursBefore < payment.booking.business.refundCutoffHours) {
+      return prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: "FORFEITED", lastError: null },
+      });
+    }
+  }
   if (payment.status === "REQUIRES_PAYMENT") {
     await prisma.payment.update({ where: { id: payment.id }, data: { status: "EXPIRED" } });
     await getGateway()

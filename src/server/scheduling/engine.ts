@@ -70,8 +70,8 @@ interface Context {
   }[];
   /** Active resources of the required type (empty when none is required). */
   resources: { id: string }[];
-  /** Owner-blocked time from the external calendar: busy for everyone. */
-  blocks: Interval[];
+  /** Blocked time from external calendars: staffId null = busy for everyone. */
+  blocks: (Interval & { staffId: string | null })[];
 }
 
 async function loadContext(
@@ -163,7 +163,7 @@ async function loadContext(
         startsAt: { lt: args.range.end },
         endsAt: { gt: args.range.start },
       },
-      select: { startsAt: true, endsAt: true },
+      select: { startsAt: true, endsAt: true, staffId: true },
     }),
   ]);
 
@@ -171,7 +171,7 @@ async function loadContext(
     business,
     service,
     staff,
-    blocks: blocks.map((b) => ({ start: b.startsAt, end: b.endsAt })),
+    blocks: blocks.map((b) => ({ start: b.startsAt, end: b.endsAt, staffId: b.staffId })),
     availability: {
       timezone: business.timezone,
       rules,
@@ -196,7 +196,10 @@ function buildQuery(ctx: Context, dates: LocalDate[], now: Date): SlotQuery {
   const staff: StaffCandidate[] = ctx.staff.map((s) => ({
     staffId: s.id,
     windows: dates.flatMap((d) => workingWindows(ctx.availability, s.id, d)),
-    busy: [...ctx.bookings.filter((b) => b.staffId === s.id).map(bookingFootprint), ...ctx.blocks],
+    busy: [
+      ...ctx.bookings.filter((b) => b.staffId === s.id).map(bookingFootprint),
+      ...ctx.blocks.filter((b) => b.staffId === null || b.staffId === s.id),
+    ],
   }));
   const resources = ctx.resources.map((r) => ({
     resourceId: r.id,

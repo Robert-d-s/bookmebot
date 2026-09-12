@@ -126,6 +126,36 @@ export async function rescheduleBookingAction(formData: FormData) {
 
 // --- settings ----------------------------------------------------------------
 
+export async function saveBusinessSettingsAction(formData: FormData) {
+  const user = await requireUser();
+  try {
+    const input = z
+      .object({
+        refundCutoffHours: z.coerce
+          .number()
+          .int()
+          .min(0)
+          .max(24 * 30),
+        minLeadMin: z.coerce
+          .number()
+          .int()
+          .min(0)
+          .max(24 * 60 * 7),
+        maxAdvanceDays: z.coerce.number().int().min(1).max(365),
+      })
+      .parse({
+        refundCutoffHours: str(formData, "refundCutoffHours"),
+        minLeadMin: str(formData, "minLeadMin"),
+        maxAdvanceDays: str(formData, "maxAdvanceDays"),
+      });
+    await prisma.business.update({ where: { id: user.businessId }, data: input });
+  } catch (err) {
+    fail("/dashboard/settings", describe(err));
+  }
+  revalidatePath("/dashboard/settings");
+  redirect("/dashboard/settings?ok=Settings+saved");
+}
+
 export async function saveBusinessHoursAction(formData: FormData) {
   const user = await requireUser();
   const rules = [];

@@ -25,6 +25,7 @@ multi-resource scheduling engine and a webhook reliability layer.
 | 6     | Payments: deposits as holds, refunds on cancel, Stripe test mode + local fake gateway  | done  |
 | 7     | Google Calendar two-way sync: push by booking version, pull blocks, demo calendar      | done  |
 | 8     | Ops: RLS on every table + tenant role, Sentry, PostHog, deploy checklist               | done  |
+| +     | Extensions: refund cutoff, public booking page with manage links, per-staff calendars  | done  |
 
 ## Design highlights (the hard parts)
 
@@ -98,6 +99,8 @@ docs/adr/           architecture decision records
 - [Learning note 05](docs/learning/05-ai-conversation.md): the AI conversation layer
 - [Learning note 06](docs/learning/06-payments.md): deposits and refunds
 - [Learning note 07](docs/learning/07-calendar-sync.md): Google Calendar two-way sync
+- [Learning note 08](docs/learning/08-ops.md): RLS, Sentry, PostHog
+- [Learning note 09](docs/learning/09-extensions.md): refund cutoff, public booking page, per-staff calendars
 - [Deploy guide](docs/deploy.md): Vercel Hobby + Supabase free tier
 
 ## API (public booking routes have no auth yet; cron and admin routes take `Authorization: Bearer $CRON_SECRET`)

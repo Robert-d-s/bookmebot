@@ -20,11 +20,19 @@ export async function GET(req: NextRequest) {
 
   try {
     const tokens = await exchangeCode(code);
-    await prisma.calendarConnection.upsert({
-      where: { businessId },
-      create: { businessId, provider: "google", ...tokens },
-      update: { provider: "google", ...tokens, syncToken: null, lastError: null },
+    const existing = await prisma.calendarConnection.findFirst({
+      where: { businessId, staffId: null },
     });
+    if (existing) {
+      await prisma.calendarConnection.update({
+        where: { id: existing.id },
+        data: { provider: "google", ...tokens, syncToken: null, lastError: null },
+      });
+    } else {
+      await prisma.calendarConnection.create({
+        data: { businessId, provider: "google", ...tokens },
+      });
+    }
     return back("ok=connected");
   } catch (err) {
     return back(

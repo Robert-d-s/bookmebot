@@ -273,3 +273,64 @@ describe("deposit through chat", () => {
     expect(booking.status).toBe("PENDING");
   });
 });
+
+describe("refund cutoff", () => {
+  const cutoffBusiness = () =>
+    prisma.business.update({ where: { id: f.businessId }, data: { refundCutoffHours: 24 } });
+
+  async function paidBooking(startsAt: Date) {
+    const { booking } = await createBooking(base(startsAt));
+    const row = await prisma.payment.findUniqueOrThrow({ where: { bookingId: booking.id } });
+    await stripeEvent("checkout.session.completed", {
+      id: row.checkoutSessionId,
+      object: "checkout.session",
+      payment_status: "paid",
+      payment_intent: `pi_cut_${booking.id.slice(0, 8)}`,
+    });
+    return booking;
+  }
+
+  it("a customer cancelling inside the cutoff forfeits the deposit; outside it is refunded", async () => {
+    await cutoffBusiness();
+    // Fixture Monday is 2030-01-07; NOW is the day before at 12:00Z, so 09:00 local is ~19h away.
+    const late = await paidBooking(at(9, 30));
+    const r1 = await cancelBookingAndRefund({
+      businessId: f.businessId,
+      bookingId: late.id,
+      now: NOW,
+      refundPolicy: "apply",
+    });
+    expect(r1.deposit).toBe("FORFEITED");
+    expect((await prisma.payment.findUniqueOrThrow({ where: { bookingId: late.id } })).status).toBe(
+      "FORFEITED",
+    );
+
+    const early = await paidBooking(at(17));
+    const r2 = await cancelBookingAndRefund({
+      businessId: f.businessId,
+      bookingId: early.id,
+      now: new Date(NOW.getTime() - 24 * 3_600_000),
+      refundPolicy: "apply",
+    });
+    expect(r2.deposit).toBe("REFUNDED");
+  });
+
+  it("the owner cancelling always refunds", async () => {
+    await cutoffBusiness();
+    const b = await paidBooking(at(9, 45));
+    const r = await cancelBookingAndRefund({ businessId: f.businessId, bookingId: b.id, now: NOW });
+    expect(r.deposit).toBe("REFUNDED");
+  });
+
+  it("a cutoff of 0 always refunds", async () => {
+    await prisma.business.update({ where: { id: f.businessId }, data: { refundCutoffHours: 0 } });
+    const b = await paidBooking(at(17, 15));
+    const r = await cancelBookingAndRefund({
+      businessId: f.businessId,
+      bookingId: b.id,
+      now: new Date(b.startsAt.getTime() - 5 * 60_000),
+      refundPolicy: "apply",
+    });
+    expect(r.deposit).toBe("REFUNDED");
+  });
+});

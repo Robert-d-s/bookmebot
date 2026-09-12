@@ -17,16 +17,25 @@ import { localMinutesToUtc, type LocalDate } from "@/server/scheduling/time";
 
 const back = (q: string): never => redirect(`/dashboard/calendar?${q}`);
 
-export async function connectDemoCalendarAction() {
+const staffOf = async (businessId: string, formData: FormData) => {
+  const staffId = String(formData.get("staffId") ?? "") || null;
+  if (staffId) {
+    const staff = await prisma.staff.findFirst({ where: { id: staffId, businessId } });
+    if (!staff) back("error=Unknown+staff");
+  }
+  return staffId;
+};
+
+export async function connectDemoCalendarAction(formData: FormData) {
   const user = await requireUser();
-  await connectDemo(user.businessId);
+  await connectDemo(user.businessId, await staffOf(user.businessId, formData));
   revalidatePath("/dashboard/calendar");
   back("ok=Demo+calendar+connected");
 }
 
-export async function disconnectCalendarAction() {
+export async function disconnectCalendarAction(formData: FormData) {
   const user = await requireUser();
-  await disconnect(user.businessId);
+  await disconnect(user.businessId, await staffOf(user.businessId, formData));
   revalidatePath("/dashboard/calendar");
   back("ok=Disconnected");
 }
@@ -43,7 +52,10 @@ export async function syncNowAction() {
 /** Demo only: pretend the owner created an event in Google, then pull it. */
 export async function addForeignBlockAction(formData: FormData) {
   const user = await requireUser();
-  const conn = await getConnection(user.businessId);
+  const staffId = await staffOf(user.businessId, formData);
+  const conn = staffId
+    ? await prisma.calendarConnection.findFirst({ where: { businessId: user.businessId, staffId } })
+    : await getConnection(user.businessId);
   if (!conn || conn.provider !== "fake") back("error=Demo+calendar+not+connected");
   const business = await prisma.business.findUniqueOrThrow({
     where: { id: user.businessId },
@@ -81,7 +93,9 @@ export async function addForeignBlockAction(formData: FormData) {
 
 export async function removeForeignBlockAction(formData: FormData) {
   const user = await requireUser();
-  const conn = await getConnection(user.businessId);
+  const conn = await prisma.calendarConnection.findFirst({
+    where: { id: String(formData.get("connectionId") ?? ""), businessId: user.businessId },
+  });
   if (!conn || conn.provider !== "fake") back("error=Demo+calendar+not+connected");
   fakeCalendar.cancelForeign(conn!, String(formData.get("externalEventId") ?? ""));
   await pullBlocks(conn!.id);

@@ -40,6 +40,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext<"/api/bookings/
     const booking = await cancelBookingAndRefund({
       businessId: await businessIdBySlug(q.business),
       bookingId: id,
+      refundPolicy: "apply",
     });
     return NextResponse.json({ booking });
   });

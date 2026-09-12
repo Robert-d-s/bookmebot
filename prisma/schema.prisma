@@ -40,6 +40,8 @@ model Business {
   maxAdvanceDays     Int      @default(60) @map("max_advance_days")
   /// Meta phone_number_id that routes inbound WhatsApp traffic to this business.
   whatsappPhoneNumberId String? @unique @map("whatsapp_phone_number_id")
+  /// Deposits are refunded only when the customer cancels at least this many hours before the start. 0 = always refund.
+  refundCutoffHours  Int      @default(24) @map("refund_cutoff_hours")
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -54,7 +56,7 @@ model Business {
   messages              Message[]
   conversations         Conversation[]
   payments              Payment[]
-  calendarConnection    CalendarConnection?
+  calendarConnections   CalendarConnection[]
   calendarBlocks        CalendarBlock[]
 
   @@map("businesses")
@@ -102,6 +104,8 @@ model Staff {
   bookings              Booking[]
   availabilityRules     AvailabilityRule[]
   availabilityOverrides AvailabilityOverride[]
+  calendarConnection    CalendarConnection?
+  calendarBlocks        CalendarBlock[]
 
   @@index([businessId])
   @@map("staff")
@@ -474,6 +478,8 @@ enum PaymentStatus {
   /// Checkout expired or hold lapsed before payment.
   EXPIRED
   FAILED
+  /// Customer cancelled inside the refund cutoff: deposit kept.
+  FORFEITED
 
   @@map("payment_status")
 }
@@ -510,9 +516,14 @@ model Payment {
 // busy time.
 // ---------------------------------------------------------------------------
 
+/// One per business (staffId null: the shared calendar) and optionally one per
+/// staff member. A booking goes to its staff member's calendar when there is
+/// one, else to the business calendar. Uniqueness of the business-level row is
+/// a partial index in the migration (NULLs are distinct in Postgres).
 model CalendarConnection {
   id           String    @id @default(uuid()) @db.Uuid
-  businessId   String    @unique @map("business_id") @db.Uuid
+  businessId   String    @map("business_id") @db.Uuid
+  staffId      String?   @unique @map("staff_id") @db.Uuid
   /// "google" or "fake" (local demo)
   provider     String
   calendarId   String    @default("primary") @map("calendar_id")
@@ -527,9 +538,11 @@ model CalendarConnection {
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staff    Staff?          @relation(fields: [staffId], references: [id], onDelete: Cascade)
   events   CalendarEvent[]
   blocks   CalendarBlock[]
 
+  @@index([businessId])
   @@map("calendar_connections")
 }
 
@@ -558,11 +571,13 @@ model CalendarEvent {
   @@map("calendar_events")
 }
 
-/// Time the owner blocked in the external calendar. Busy for every staff member.
+/// Time blocked in an external calendar. From the business calendar: busy for
+/// everyone. From a staff calendar (staffId set): busy for that person only.
 model CalendarBlock {
   id              String   @id @default(uuid()) @db.Uuid
   businessId      String   @map("business_id") @db.Uuid
   connectionId    String   @map("connection_id") @db.Uuid
+  staffId         String?  @map("staff_id") @db.Uuid
   externalEventId String   @map("external_event_id")
   startsAt        DateTime @map("starts_at") @db.Timestamptz
   endsAt          DateTime @map("ends_at") @db.Timestamptz
@@ -572,6 +587,7 @@ model CalendarBlock {
 
   business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
   connection CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  staff      Staff?             @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@unique([connectionId, externalEventId])
   @@index([businessId, startsAt])

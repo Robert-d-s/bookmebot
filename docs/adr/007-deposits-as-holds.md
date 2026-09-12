@@ -43,8 +43,9 @@ also work with no Stripe account at all.
 
 - The engine stays payment-agnostic; `bookings/index.ts` is the only place that knows a
   deposit exists, and every customer-facing create/cancel goes through it.
-- The refund policy is "always full refund". A cut-off (e.g. no refund inside 24 hours)
-  is one condition in `refundDeposit`, deliberately not implemented for the demo.
+- The refund policy is a per-business cutoff (`refund_cutoff_hours`, default 24): a
+  customer cancelling inside it forfeits the deposit (`FORFEITED`); owner cancellations
+  always refund. See learning note 09.
 - Stripe's signature scheme (`t=,v1=` over `${t}.${body}`, 5-minute tolerance) is its own
   helper next to the HMAC one; the two look alike but differ in the signed payload.
 - Real Stripe needs `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and a public `APP_URL`

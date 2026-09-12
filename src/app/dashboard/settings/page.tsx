@@ -1,6 +1,7 @@
 import { requireUser } from "@/server/auth/session";
 import { getBusiness, getBusinessHours, getCatalog } from "@/server/dashboard/queries";
 import {
+  saveBusinessSettingsAction,
   createResourceAction,
   createStaffAction,
   saveBusinessHoursAction,
@@ -30,10 +31,52 @@ export default async function SettingsPage(props: PageProps<"/dashboard/settings
         ok={typeof sp.ok === "string" ? sp.ok : undefined}
         error={typeof sp.error === "string" ? sp.error : undefined}
       />
-      <p className="text-sm text-zinc-500">
-        {business.timezone} · {business.slotGranularityMin}-minute grid · book {business.minLeadMin}{" "}
-        min to {business.maxAdvanceDays} days ahead
-      </p>
+      <section className={card}>
+        <h2 className="mb-2 font-medium">Booking rules</h2>
+        <form
+          action={saveBusinessSettingsAction}
+          className="flex flex-wrap items-end gap-3 text-sm"
+        >
+          <span className="text-zinc-500">
+            {business.timezone} · {business.slotGranularityMin}-minute grid
+          </span>
+          <label>
+            Min lead (min)
+            <input
+              name="minLeadMin"
+              type="number"
+              min={0}
+              defaultValue={business.minLeadMin}
+              className={`${input} mt-1 block w-24`}
+            />
+          </label>
+          <label>
+            Max advance (days)
+            <input
+              name="maxAdvanceDays"
+              type="number"
+              min={1}
+              defaultValue={business.maxAdvanceDays}
+              className={`${input} mt-1 block w-24`}
+            />
+          </label>
+          <label>
+            Refund cutoff (hours)
+            <input
+              name="refundCutoffHours"
+              type="number"
+              min={0}
+              defaultValue={business.refundCutoffHours}
+              className={`${input} mt-1 block w-24`}
+            />
+          </label>
+          <button className={buttonSecondary}>Save</button>
+          <p className="basis-full text-xs text-zinc-500">
+            Deposits are refunded only when the customer cancels at least this many hours before the
+            appointment. Owner cancellations from this dashboard always refund.
+          </p>
+        </form>
+      </section>
 
       <section className={card}>
         <h2 className="mb-2 font-medium">Opening hours</h2>

@@ -308,13 +308,19 @@ export async function executeTool(
         }));
       if (!own) throw new ToolError("no such booking");
       const b = await wrap(() =>
-        cancelBookingAndRefund({ businessId: ctx.businessId, bookingId: own.id, now: ctx.now }),
+        cancelBookingAndRefund({
+          businessId: ctx.businessId,
+          bookingId: own.id,
+          now: ctx.now,
+          refundPolicy: "apply",
+        }),
       );
       return {
         booking_id: b.id,
         status: b.status,
         service: own.service.name,
         when: fmt(own.startsAt, ctx.timezone),
+        deposit: b.deposit ?? "NONE",
       };
     }
     case "reschedule_booking": {

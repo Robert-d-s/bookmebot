@@ -25,9 +25,10 @@ transaction" would couple every booking to Google's uptime.
 - **Our events are tagged** (`extendedProperties.private.bookmebot = "1"`, plus the
   booking id). The pull side skips tagged events, which is the whole of echo-loop
   prevention. An event the owner deleted by hand is recreated on the next change.
-- **Pull produces `calendar_blocks`**, business-wide busy intervals the engine adds to
-  every staff member's busy list. One calendar per business keeps this simple; per-staff
-  calendars would be a `staffId` on the block. Incremental sync uses Google's sync
+- **Pull produces `calendar_blocks`**, busy intervals the engine adds to every staff
+  member's busy list when they come from the shared calendar, or to one person's when
+  they come from that person's own calendar (`staff_id` on the connection and block; see
+  learning note 09 for the per-staff extension). Incremental sync uses Google's sync
   token; a 410 falls back to a full listing of the booking window, which is then treated
   as the truth (blocks that vanished are dropped).
 - **A `CalendarApi` interface with a Google implementation and an in-memory fake** that

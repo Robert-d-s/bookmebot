@@ -57,7 +57,11 @@ const starts = async () =>
 describe("push", () => {
   it("a confirmed booking becomes one tagged external event", async () => {
     const { booking } = await book(at(9));
-    expect(await pushBooking(booking.id)).toEqual({ action: "inserted" });
+    // createBooking already fired a background push; whichever runs first
+    // inserts, the other sees the mirror and skips. Never two events.
+    const r = await pushBooking(booking.id);
+    expect(["inserted", "skipped"]).toContain(r.action);
+    expect(fakeCalendar.count(conn)).toBe(1);
     const m = await mirror(booking.id);
     expect(m?.status).toBe("SYNCED");
     expect(m?.syncedVersion).toBe(booking.version);
@@ -140,8 +144,8 @@ describe("push", () => {
         paymentIntentId: "pi_cal",
         now: NOW,
       });
-      const r = await syncDue();
-      expect(r.pushed).toBeGreaterThanOrEqual(1);
+      // markPaid fires a background push; the sweep is the safety net if that lost.
+      await syncDue();
       expect((await mirror(booking.id))?.status).toBe("SYNCED");
     } finally {
       setGateway(undefined);
@@ -219,5 +223,88 @@ describe("pull", () => {
       await prisma.calendarBlock.count({ where: { connectionId: conn.id, externalEventId: id } }),
     ).toBe(1);
     expect((await getConnection(f.businessId))?.syncToken).toBeTruthy();
+  });
+});
+
+describe("per-staff calendars", () => {
+  it("a staff member's own calendar receives their bookings; the shared one keeps the rest", async () => {
+    const [ana, bogdan] = f.staff;
+    const anaConn = await connectDemo(f.businessId, ana.id);
+    const { booking: forAna } = await createBooking({
+      businessId: f.businessId,
+      serviceId: f.service.id,
+      customerId: f.customer.id,
+      staffId: ana.id,
+      startsAt: at(9, 30),
+      now: NOW,
+      source: "API",
+    });
+    const { booking: forBogdan } = await createBooking({
+      businessId: f.businessId,
+      serviceId: f.service.id,
+      customerId: f.customer.id,
+      staffId: bogdan.id,
+      startsAt: at(9, 30),
+      now: NOW,
+      source: "API",
+    });
+    await pushBooking(forAna.id);
+    await pushBooking(forBogdan.id);
+    expect((await mirror(forAna.id))?.connectionId).toBe(anaConn.id);
+    expect((await mirror(forBogdan.id))?.connectionId).toBe(conn.id);
+    expect(fakeCalendar.count(anaConn)).toBe(1);
+  });
+
+  it("moving a booking to another staff member moves the event between calendars", async () => {
+    const [ana, bogdan] = f.staff;
+    const anaConn = await prisma.calendarConnection.findUniqueOrThrow({
+      where: { staffId: ana.id },
+    });
+    const { booking } = await createBooking({
+      businessId: f.businessId,
+      serviceId: f.service.id,
+      customerId: f.customer.id,
+      staffId: ana.id,
+      startsAt: at(11, 30),
+      now: NOW,
+      source: "API",
+    });
+    await pushBooking(booking.id);
+    const first = (await mirror(booking.id))!;
+    expect(first.connectionId).toBe(anaConn.id);
+    await rescheduleBooking({
+      businessId: f.businessId,
+      bookingId: booking.id,
+      startsAt: at(11, 30),
+      staffId: bogdan.id,
+      now: NOW,
+    });
+    expect(await pushBooking(booking.id)).toEqual({ action: "inserted" });
+    const second = (await mirror(booking.id))!;
+    expect(second.connectionId).toBe(conn.id);
+    expect(fakeCalendar.get(anaConn, first.externalEventId)?.status).toBe("cancelled");
+  });
+
+  it("a block in a staff calendar makes only that person busy", async () => {
+    const [ana] = f.staff;
+    const anaConn = await prisma.calendarConnection.findUniqueOrThrow({
+      where: { staffId: ana.id },
+    });
+    fakeCalendar.addForeign(anaConn, { start: at(15, 30), end: at(16), summary: "Ana's dentist" });
+    await pullBlocks(anaConn.id, NOW);
+    const block = await prisma.calendarBlock.findFirst({ where: { connectionId: anaConn.id } });
+    expect(block?.staffId).toBe(ana.id);
+    const slots = await getAvailability({
+      businessId: f.businessId,
+      serviceId: f.service.id,
+      from: MONDAY,
+      to: MONDAY,
+      now: NOW,
+    });
+    const slot = slots.find((s) => s.start.getTime() === at(15, 30).getTime());
+    expect(slot).toBeDefined();
+    expect(slot!.staffIds).not.toContain(ana.id);
+    expect(slot!.staffIds.length).toBeGreaterThan(0);
+    await disconnect(f.businessId, ana.id);
   });
 });

@@ -134,6 +134,7 @@ export const simulatorHandler: EventHandler = async (event) => {
         const cancelled = await cancelBookingAndRefund({
           businessId: booking.businessId,
           bookingId,
+          refundPolicy: "apply",
         });
         return { kind: "processed", result: { bookingId, status: cancelled.status } };
       } catch (err) {

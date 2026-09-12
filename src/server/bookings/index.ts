@@ -10,6 +10,7 @@ import {
 } from "@/server/scheduling";
 import {
   HOLD_MINUTES,
+  type RefundPolicy,
   createDepositCheckout,
   paymentsEnabled,
   refundDeposit,
@@ -62,10 +63,33 @@ export async function createBooking(
   }
 }
 
-export async function cancelBookingAndRefund(input: CancelInput): Promise<BookingRecord> {
+export interface CancelResult extends BookingRecord {
+  /** What happened to the deposit, if there was one. */
+  deposit?: "REFUNDED" | "REFUND_PENDING" | "FORFEITED" | "EXPIRED" | "FAILED" | "NONE";
+}
+
+/**
+ * Cancel and settle the deposit. `refundPolicy: "apply"` (customer-initiated)
+ * honours the business's cutoff; "always" (owner-initiated) refunds regardless.
+ */
+export async function cancelBookingAndRefund(
+  input: CancelInput & { refundPolicy?: RefundPolicy },
+): Promise<CancelResult> {
   const booking = await cancelBooking(input);
-  await refundDeposit(booking.id, input.now);
+  const payment = await refundDeposit(booking.id, input.now, input.refundPolicy ?? "always");
   pushSoon(booking.id);
-  track(input.businessId, "booking_cancelled", { source: booking.source });
-  return booking;
+  track(input.businessId, "booking_cancelled", {
+    source: booking.source,
+    deposit: payment?.status ?? "NONE",
+  });
+  const deposit = payment
+    ? payment.status === "REFUNDED" ||
+      payment.status === "REFUND_PENDING" ||
+      payment.status === "FORFEITED" ||
+      payment.status === "EXPIRED" ||
+      payment.status === "FAILED"
+      ? payment.status
+      : "NONE"
+    : "NONE";
+  return { ...booking, deposit };
 }
