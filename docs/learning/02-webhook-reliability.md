@@ -11,7 +11,8 @@ registry.ts     providers and handlers by name
 signature.ts    HMAC-SHA256 + constant-time compare (Meta's exact scheme)
 ingest.ts       persist delivery + events, dedupe, answer
 process.ts      claim, run handler, record outcome, backoff, defer/wake, sweep, replay
-providers/      simulator (phase 2); whatsapp, stripe, google land in later phases
+providers/      simulator; whatsapp (learning note 04) and stripe (06) register here too.
+                Google Calendar is polled, not a webhook (07).
 ```
 
 Routes: `POST /api/webhooks/[provider]` (receiver), `GET /api/cron/tick` (sweeper plus
@@ -70,8 +71,8 @@ the external reference and our booking id; no extra column on `bookings` was nee
   the same invocation. If the platform kills the function first, the event is still
   RECEIVED and the sweeper picks it up.
 - There is no queue. The cron tick is the queue. On Vercel Hobby that is one daily cron,
-  so a GitHub Actions schedule (every 5 minutes is the minimum) will call the tick once
-  the app is deployed (phase 3).
+  so a GitHub Actions schedule (every 5 minutes is the minimum) calls the tick once the
+  app is deployed (`docs/deploy.md`).
 
 ## Try it
 

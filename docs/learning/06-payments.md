@@ -72,4 +72,5 @@ secret (or configure the endpoint in the dashboard once deployed), and set
 2. What happens if `checkout.session.completed` arrives twice?
 3. A customer pays at minute 31, after the cron released the hold. What state does everything end in?
 4. Why does the owner's dashboard booking skip the deposit, and where is that decided?
-5. Where would a "no refund within 24 hours" policy live, and what would the customer-facing tool return?
+5. The refund cutoff now lives in `refundDeposit`'s policy argument (learning note 09). Why does the
+   owner's cancel bypass it while the API's applies it, when both call the same function?

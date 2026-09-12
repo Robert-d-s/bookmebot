@@ -65,4 +65,5 @@ after 7 days unless the app is published; reconnecting is one click.
 2. What happens if the sweep runs twice at the same time for the same booking?
 3. The owner deletes a pushed event in Google, then the customer reschedules. Trace it.
 4. Why is a full pull allowed to delete blocks, but an incremental pull only deletes what Google says is cancelled?
-5. Where would per-staff calendars change the design?
+5. Per-staff calendars were added afterwards (learning note 09). Which two functions in `sync.ts`
+   had to learn about `staffId`, and why did the engine need only a one-line change?

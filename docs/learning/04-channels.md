@@ -13,7 +13,7 @@ src/server/channels/
   whatsapp/parse.ts     Meta webhook payload -> events (messages + statuses)
   whatsapp/api.ts       POST /{phone_number_id}/messages; text, buttons, list
   whatsapp/provider.ts  signature (X-Hub-Signature-256), GET challenge, handler
-src/server/conversation/respond.ts   scripted responder; phase 5 swaps the body
+src/server/conversation/respond.ts   entry point of the conversation layer (learning note 05)
 src/app/dashboard/simulator/         the chat page; each send is a signed webhook
 src/app/dashboard/customers/[id]/    bookings + message thread per customer
 scripts/tick.ts                      local scheduler (`pnpm tick --watch`)

@@ -94,6 +94,7 @@ docs/adr/           architecture decision records
 - [ADR-006](docs/adr/006-llm-proposes-engine-decides.md): the model proposes, the engine decides
 - [ADR-007](docs/adr/007-deposits-as-holds.md): deposits are holds, Stripe events drive state
 - [ADR-008](docs/adr/008-calendar-sync-by-version.md): calendar push by booking version, pulled blocks
+- [ADR-009](docs/adr/009-row-level-security.md): RLS on every table, tenant role scoped per transaction
 - [Learning note 00](docs/learning/00-foundation.md): foundation
 - [Learning note 01](docs/learning/01-scheduling-engine.md): scheduling engine
 - [Learning note 02](docs/learning/02-webhook-reliability.md): webhook reliability layer
