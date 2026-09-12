@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { reportError } from "@/server/observability";
 import {
   BookingStateError,
   NotFoundError,
@@ -32,6 +33,7 @@ export function errorResponse(err: unknown): NextResponse {
     return NextResponse.json({ error: err.code, message: err.message }, { status: 409 });
   }
   console.error(err);
+  reportError(err);
   return NextResponse.json({ error: "INTERNAL" }, { status: 500 });
 }
 

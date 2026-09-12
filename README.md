@@ -24,7 +24,26 @@ multi-resource scheduling engine and a webhook reliability layer.
 | 5     | AI conversation layer: tool loop, Claude or a zero-spend rule engine                   | done  |
 | 6     | Payments: deposits as holds, refunds on cancel, Stripe test mode + local fake gateway  | done  |
 | 7     | Google Calendar two-way sync: push by booking version, pull blocks, demo calendar      | done  |
-| 8     | Ops: RLS, Sentry, PostHog                                                              | next  |
+| 8     | Ops: RLS on every table + tenant role, Sentry, PostHog, deploy checklist               | done  |
+
+## Design highlights (the hard parts)
+
+- **Double-booking is impossible at the database.** Range exclusion constraints on
+  `bookings` (per staff) and `booking_resources` (per chair) reject overlapping active
+  rows even if application code is wrong. A trigger keeps the resource mirror in sync.
+  ([ADR-001](docs/adr/001-db-level-double-booking-guard.md))
+- **One writer per business.** Reservations take a transaction-scoped advisory lock,
+  then run the same `checkSlot` predicate the slot generator uses, so losers of a race
+  get a precise reason instead of a constraint error. 25 parallel reservations: exactly
+  one wins; with 3 staff and 2 chairs, exactly two. ([ADR-002](docs/adr/002-advisory-lock-serialises-writes.md))
+- **Webhooks are persisted before they are processed**, deduped by provider event id,
+  claimed by a status-guarded update, retried with backoff, dead-lettered and
+  replayable; out-of-order events wait for their sibling. One layer serves WhatsApp,
+  Stripe and the simulator. ([ADR-003](docs/adr/003-inbound-webhooks-persist-then-process.md))
+- **The model proposes, the engine decides.** The chat brain can only book through a
+  propose-then-confirm pair of tools, and confirm refuses in the same turn as the
+  proposal. Works with Claude, any free OpenAI-compatible endpoint, or a scripted brain
+  in CI. ([ADR-006](docs/adr/006-llm-proposes-engine-decides.md))
 
 ## Getting started
 

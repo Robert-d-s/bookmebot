@@ -1,5 +1,6 @@
 import type { InboundEvent, InboundEventStatus, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { reportError } from "@/server/observability";
 import { getHandler } from "./registry";
 import type { HandlerOutcome } from "./types";
 
@@ -55,6 +56,7 @@ export async function processEvent(
     try {
       outcome = await handler(event);
     } catch (err) {
+      reportError(err, { eventId: event.id, provider: event.provider, eventType: event.eventType });
       outcome = { kind: "retry", reason: err instanceof Error ? err.message : String(err) };
     }
   }

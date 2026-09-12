@@ -15,7 +15,9 @@ Everything below is free. Run once; afterwards every push to `main` deploys.
    DIRECT_URL="<session pooler url>" DATABASE_URL="<session pooler url>" \
      SEED_OWNER_PASSWORD="choose-a-real-one" pnpm db:deploy && pnpm db:seed
    ```
-   `btree_gist` is enabled by the first migration; Supabase allows it.
+   `btree_gist` is enabled by the first migration; Supabase allows it. The RLS migration
+   creates the `app_tenant` role and enables RLS on every table, which is what keeps the
+   Supabase anon key from reading your data through PostgREST (ADR-009).
 
 ## 2. Vercel project
 

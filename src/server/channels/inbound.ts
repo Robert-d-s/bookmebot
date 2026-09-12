@@ -1,4 +1,5 @@
 import type { Channel, Prisma } from "@/generated/prisma/client";
+import { track } from "@/server/analytics";
 import { findOrCreateCustomer } from "@/server/customers";
 import { prisma } from "@/server/db/prisma";
 import { respond } from "@/server/conversation/respond";
@@ -49,6 +50,7 @@ export async function handleInboundMessage(args: InboundArgs) {
     },
   });
 
+  track(args.businessId, "message_received", { channel: args.channel, kind: args.message.kind });
   const replies = await respond({
     businessId: args.businessId,
     customer: { id: customer.id, name: customer.name },

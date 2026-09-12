@@ -1,4 +1,5 @@
 import { env } from "@/env";
+import { track } from "@/server/analytics";
 import { pushSoon } from "@/server/calendar/sync";
 import { prisma } from "@/server/db/prisma";
 import { getGateway } from "./gateway";
@@ -102,6 +103,10 @@ export async function markPaid(args: {
     await refundDeposit(payment.bookingId, now);
   }
   if (booking.count > 0) pushSoon(payment.bookingId);
+  track(payment.businessId, "payment_paid", {
+    amountCents: payment.amountCents,
+    currency: payment.currency,
+  });
   return { payment: updatedPayment, booking: fresh, already: false };
 }
 

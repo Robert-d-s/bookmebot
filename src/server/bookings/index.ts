@@ -1,3 +1,4 @@
+import { track } from "@/server/analytics";
 import { pushSoon } from "@/server/calendar/sync";
 import { prisma } from "@/server/db/prisma";
 import {
@@ -37,12 +38,14 @@ export async function createBooking(
   if (!deposit) {
     const booking = await reserveSlot({ ...input, status: "CONFIRMED" });
     pushSoon(booking.id);
+    track(input.businessId, "booking_created", { source: booking.source, deposit: false });
     return { booking };
   }
 
   const booking = await reserveSlot({ ...input, status: "PENDING", holdMinutes: HOLD_MINUTES });
   try {
     const payment = await createDepositCheckout(booking.id, input.now);
+    track(input.businessId, "booking_created", { source: booking.source, deposit: true });
     return {
       booking,
       payment: {
@@ -63,5 +66,6 @@ export async function cancelBookingAndRefund(input: CancelInput): Promise<Bookin
   const booking = await cancelBooking(input);
   await refundDeposit(booking.id, input.now);
   pushSoon(booking.id);
+  track(input.businessId, "booking_cancelled", { source: booking.source });
   return booking;
 }

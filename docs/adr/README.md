@@ -23,3 +23,4 @@ Date: YYYY-MM-DD
 | [006](006-llm-proposes-engine-decides.md)           | The model proposes, the engine decides; one loop for any brain                 |
 | [007](007-deposits-as-holds.md)                     | Deposits are holds; Stripe events drive state; a fake gateway keeps it local   |
 | [008](008-calendar-sync-by-version.md)              | Calendar push keyed on booking version; pulled time becomes engine blocks      |
+| [009](009-row-level-security.md)                    | RLS on every table; a tenant role scoped by a transaction setting              |

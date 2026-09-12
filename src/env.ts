@@ -49,6 +49,11 @@ export const env = createEnv({
     /** Google OAuth web client for Calendar. Unset = demo (fake) calendar only. */
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+    /** Sentry (free tier). Server DSN; NEXT_PUBLIC_SENTRY_DSN for the browser. */
+    SENTRY_DSN: z.string().url().optional(),
+    /** PostHog (free tier). */
+    POSTHOG_KEY: z.string().min(1).optional(),
+    POSTHOG_HOST: z.string().url().default("https://eu.i.posthog.com"),
   },
   client: {},
   runtimeEnv: {
@@ -72,6 +77,9 @@ export const env = createEnv({
     APP_URL: process.env.APP_URL,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    POSTHOG_KEY: process.env.POSTHOG_KEY,
+    POSTHOG_HOST: process.env.POSTHOG_HOST,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === "1",

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { BookingSource, Channel } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { cancelBookingAndRefund, createBooking } from "@/server/bookings";
+import { track } from "@/server/analytics";
 import { pushSoon } from "@/server/calendar/sync";
 import { SchedulingError, getAvailability, rescheduleBooking } from "@/server/scheduling";
 import { type LocalDate, toLocalDate } from "@/server/scheduling/time";
@@ -342,6 +343,7 @@ export async function executeTool(
         where: { customerId: ctx.customer.id },
         data: { mode: "HUMAN" },
       });
+      track(ctx.businessId, "handoff", { reason: str("reason") });
       return { ok: true, message: "A person will continue this conversation." };
     }
     default:
