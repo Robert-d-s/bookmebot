@@ -33,6 +33,7 @@ jobs:
       DIRECT_URL: postgresql://bookmebot:bookmebot@localhost:5433/bookmebot?schema=public
       CRON_SECRET: ci-cron-secret-not-real-0000
       WEBHOOK_SIMULATOR_SECRET: ci-simulator-secret-not-real
+      AUTH_SECRET: ci-auth-secret-not-real-at-least-32-chars
 
     steps:
       - uses: actions/checkout@v7

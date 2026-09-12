@@ -5,6 +5,7 @@
  * Run with `pnpm db:seed`. Idempotent: wipes and recreates the demo business.
  */
 import "dotenv/config";
+import { hash } from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
@@ -94,6 +95,16 @@ async function main() {
     },
   });
 
+  // Dashboard owner. Password from SEED_OWNER_PASSWORD (default "demo-password").
+  await prisma.user.create({
+    data: {
+      businessId: business.id,
+      email: "owner@frizeria.demo",
+      name: "Owner",
+      passwordHash: await hash(process.env.SEED_OWNER_PASSWORD ?? "demo-password", 10),
+    },
+  });
+
   await prisma.customer.createMany({
     data: [
       { businessId: business.id, phone: "+40721000001", name: "Ana Pop" },
@@ -104,6 +115,7 @@ async function main() {
   console.log(`Seeded business "${business.name}" (${business.id})`);
   console.log(`  staff: ${[andrei, mihai, ioana].map((s) => s.name).join(", ")}`);
   console.log(`  services: ${services.map((s) => s.name).join(", ")}`);
+  console.log(`  owner login: owner@frizeria.demo`);
 }
 
 main()

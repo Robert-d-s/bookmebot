@@ -19,6 +19,8 @@ export const env = createEnv({
     CRON_SECRET: z.string().min(16),
     /** HMAC key for the simulator webhook provider. */
     WEBHOOK_SIMULATOR_SECRET: z.string().min(16),
+    /** Auth.js JWT/cookie signing key. `openssl rand -base64 32`. */
+    AUTH_SECRET: z.string().min(32),
   },
   client: {},
   runtimeEnv: {
@@ -27,6 +29,7 @@ export const env = createEnv({
     DIRECT_URL: process.env.DIRECT_URL,
     CRON_SECRET: process.env.CRON_SECRET,
     WEBHOOK_SIMULATOR_SECRET: process.env.WEBHOOK_SIMULATOR_SECRET,
+    AUTH_SECRET: process.env.AUTH_SECRET,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === "1",

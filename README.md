@@ -19,8 +19,8 @@ multi-resource scheduling engine and a webhook reliability layer.
 | 0     | Foundation: repo, Postgres, Prisma schema v1, seed, CI                                 | done  |
 | 1     | Scheduling engine: slots, reserve/cancel/reschedule, multi-resource, concurrency tests | done  |
 | 2     | Webhook reliability layer: dedupe, retries, dead letters                               | done  |
-| 3     | Auth + owner dashboard + first deploy                                                  | next  |
-| 4     | WhatsApp channel + simulator channel                                                   |       |
+| 3     | Auth + owner dashboard (deploy guide ready, see docs/deploy.md)                        | done  |
+| 4     | WhatsApp channel + simulator channel                                                   | next  |
 | 5     | AI conversation layer (zero-spend providers)                                           |       |
 | 6     | Payments: deposits and refunds via Stripe test mode                                    |       |
 | 7     | Google Calendar two-way sync                                                           |       |
@@ -36,13 +36,14 @@ pnpm db:up                      # Postgres 16 in Docker on port 5433
 pnpm db:migrate                 # apply migrations
 pnpm db:seed                    # one demo barbershop
 pnpm dev                        # http://localhost:3000
+                                # dashboard: /login, owner@frizeria.demo / demo-password
 pnpm check                      # typecheck + lint + tests (what CI runs)
 ```
 
 ## Layout
 
 ```
-src/app/            Next.js routes (dashboard UI, API route handlers)
+src/app/            Next.js routes: /login, /dashboard/* (server components + actions), /api/*
 src/server/         domain layer: scheduling, webhooks, customers, http helpers, ...
 src/generated/      Prisma client (generated, not committed)
 prisma/             schema, migrations (some hand-written SQL), seed
@@ -57,11 +58,14 @@ docs/adr/           architecture decision records
 - [ADR-001](docs/adr/001-db-level-double-booking-guard.md): exclusion constraints guard double-booking
 - [ADR-002](docs/adr/002-advisory-lock-serialises-writes.md): one advisory lock per business serialises writes
 - [ADR-003](docs/adr/003-inbound-webhooks-persist-then-process.md): webhooks are persisted first, processed second
+- [ADR-004](docs/adr/004-credentials-auth-jwt-sessions.md): credentials login with JWT sessions
 - [Learning note 00](docs/learning/00-foundation.md): foundation
 - [Learning note 01](docs/learning/01-scheduling-engine.md): scheduling engine
 - [Learning note 02](docs/learning/02-webhook-reliability.md): webhook reliability layer
+- [Learning note 03](docs/learning/03-dashboard-and-auth.md): auth and the owner dashboard
+- [Deploy guide](docs/deploy.md): Vercel Hobby + Supabase free tier
 
-## API (no auth yet; cron and admin routes take `Authorization: Bearer $CRON_SECRET`)
+## API (public booking routes have no auth yet; cron and admin routes take `Authorization: Bearer $CRON_SECRET`)
 
 | Method | Path                | Purpose                                                                             |
 | ------ | ------------------- | ----------------------------------------------------------------------------------- |

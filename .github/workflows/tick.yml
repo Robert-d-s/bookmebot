@@ -1,0 +1,27 @@
+name: Tick
+
+# Free-tier scheduler for the deployed app: retries due webhook events,
+# releases expired booking holds, and (as a side effect) keeps the Supabase
+# free-tier project from pausing for inactivity.
+#
+# Needs a repository variable APP_URL (e.g. https://bookmebot.vercel.app) and a
+# repository secret CRON_SECRET matching the Vercel env var. Does nothing
+# until both exist. GitHub runs scheduled workflows at best effort; every
+# 5 minutes is the minimum interval.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  tick:
+    if: ${{ vars.APP_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call /api/cron/tick
+        run: |
+          curl --fail --silent --show-error --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ vars.APP_URL }}/api/cron/tick"

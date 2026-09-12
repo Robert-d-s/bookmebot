@@ -48,8 +48,34 @@ model Business {
   bookings              Booking[]
   availabilityRules     AvailabilityRule[]
   availabilityOverrides AvailabilityOverride[]
+  users                 User[]
 
   @@map("businesses")
+}
+
+enum UserRole {
+  OWNER
+  STAFF
+
+  @@map("user_role")
+}
+
+/// Dashboard login. Single-tenant for the demo: one owner per business, but the
+/// businessId is on the row so multi-tenant is a data change, not a schema one.
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @map("business_id") @db.Uuid
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(OWNER)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("users")
 }
 
 // ---------------------------------------------------------------------------

@@ -18,3 +18,4 @@ Date: YYYY-MM-DD
 | [001](001-db-level-double-booking-guard.md)         | Exclusion constraints, not unique indexes, guard double-booking           |
 | [002](002-advisory-lock-serialises-writes.md)       | One advisory lock per business serialises booking writes                  |
 | [003](003-inbound-webhooks-persist-then-process.md) | Inbound webhooks are persisted first, processed second, claimed by status |
+| [004](004-credentials-auth-jwt-sessions.md)         | Credentials login with JWT sessions, guarded in the proxy                 |
